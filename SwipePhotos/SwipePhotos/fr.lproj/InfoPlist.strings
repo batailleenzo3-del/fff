@@ -1,0 +1,5 @@
+/* Nom affiché sous l'icône */
+"CFBundleDisplayName" = "Swipe Photos";
+
+/* Texte affiché par iOS quand l'app demande l'accès aux photos */
+"NSPhotoLibraryUsageDescription" = "Swipe Photos a besoin d'accéder à ta photothèque pour t'afficher tes photos et vidéos, et supprimer uniquement celles que tu choisis. Rien ne quitte ton iPhone.";

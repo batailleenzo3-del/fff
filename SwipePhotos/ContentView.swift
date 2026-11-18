@@ -26,6 +26,12 @@ struct HistoryEntry {
     let decision: SwipeDecision
 }
 
+nonisolated struct LibrarySnapshot: @unchecked Sendable {
+    let queue: [PHAsset]
+    let trash: [PHAsset]
+    let existingIDs: Set<String>
+}
+
 @MainActor
 final class PhotoSwipeStore: ObservableObject {
     @Published var authorization: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
@@ -34,6 +40,7 @@ final class PhotoSwipeStore: ObservableObject {
     @Published private(set) var trash: [PHAsset] = []
     @Published private(set) var history: [HistoryEntry] = []
     @Published private(set) var hasLoaded = false
+    @Published private(set) var isLoading = false
 
     private let reviewedKey = "swipe.reviewedIDs"
     private let trashKey = "swipe.trashIDs"
@@ -55,25 +62,45 @@ final class PhotoSwipeStore: ObservableObject {
     }
 
     /// Charge toutes les photos, de la plus récente à la plus ancienne.
+    /// Le travail lourd est fait en arrière-plan pour ne pas figer l'app.
     func load() {
+        guard !isLoading else { return }
+        isLoading = true
+        let reviewedSnapshot = reviewed
+        let trashIDs = Set(UserDefaults.standard.stringArray(forKey: trashKey) ?? [])
+        Task {
+            let snapshot = await Task.detached(priority: .userInitiated) {
+                PhotoSwipeStore.fetchLibrary(reviewed: reviewedSnapshot, trashIDs: trashIDs)
+            }.value
+            reviewed.formIntersection(snapshot.existingIDs)
+            trash = snapshot.trash
+            queue = snapshot.queue
+            index = 0
+            history = []
+            hasLoaded = true
+            isLoading = false
+            save()
+        }
+    }
+
+    nonisolated private static func fetchLibrary(reviewed: Set<String>, trashIDs: Set<String>) -> LibrarySnapshot {
         let options = PHFetchOptions()
         options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         options.predicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.image.rawValue)
         let result = PHAsset.fetchAssets(with: options)
 
-        var all: [PHAsset] = []
-        all.reserveCapacity(result.count)
-        result.enumerateObjects { asset, _, _ in all.append(asset) }
-
-        let existing = Set(all.map(\.localIdentifier))
-        reviewed.formIntersection(existing)
-        let trashIDs = Set(UserDefaults.standard.stringArray(forKey: trashKey) ?? [])
-        trash = all.filter { trashIDs.contains($0.localIdentifier) }
-        queue = all.filter { !reviewed.contains($0.localIdentifier) }
-        index = 0
-        history = []
-        hasLoaded = true
-        save()
+        var queue: [PHAsset] = []
+        var trash: [PHAsset] = []
+        var existing = Set<String>()
+        queue.reserveCapacity(result.count)
+        existing.reserveCapacity(result.count)
+        result.enumerateObjects { asset, _, _ in
+            let id = asset.localIdentifier
+            existing.insert(id)
+            if trashIDs.contains(id) { trash.append(asset) }
+            if !reviewed.contains(id) { queue.append(asset) }
+        }
+        return LibrarySnapshot(queue: queue, trash: trash, existingIDs: existing)
     }
 
     func decide(_ decision: SwipeDecision) {
@@ -144,8 +171,9 @@ final class AssetImageLoader: ObservableObject {
     func load(_ asset: PHAsset, targetSize: CGSize, fast: Bool = false) {
         guard requestID == nil else { return }
         requestID = Self.request(asset, targetSize: targetSize, fast: fast) { [weak self] img in
-            Task { @MainActor in
-                if let img { self?.image = img }
+            guard let img else { return }
+            Task { @MainActor [weak self] in
+                self?.image = img
             }
         }
     }
@@ -310,7 +338,12 @@ struct ContentView: View {
             header
 
             ZStack {
-                if store.current == nil && store.hasLoaded {
+                if !store.hasLoaded {
+                    VStack(spacing: 14) {
+                        ProgressView().controlSize(.large).tint(.white)
+                        Text("Chargement de tes photos…").foregroundStyle(.secondary)
+                    }
+                } else if store.current == nil {
                     finishedView
                 } else {
                     ForEach(Array(store.upcoming.enumerated().reversed()), id: \.element.localIdentifier) { i, asset in

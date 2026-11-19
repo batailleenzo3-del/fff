@@ -346,6 +346,16 @@ final class SwipeStore: ObservableObject {
         saveTrash()
     }
 
+    #if DEBUG
+    /// Tests uniquement (Xcode) : règle le compteur de swipes gratuits.
+    func debugSetFreeSwipesUsed(_ value: Int) {
+        freeSwipesUsed = min(max(value, 0), AppConfig.freeSwipeLimit)
+        countedSwipeIDs.removeAll()
+        UserDefaults.standard.set(freeSwipesUsed, forKey: Key.freeSwipesUsed)
+        UserDefaults.standard.set([String](), forKey: Key.countedSwipeIDs)
+    }
+    #endif
+
     /// Compte un swipe gratuit (une seule fois par média, et jamais rendu par « Annuler »).
     private func countFreeSwipe(_ id: String) {
         guard freeSwipesUsed < AppConfig.freeSwipeLimit, countedSwipeIDs.insert(id).inserted else { return }

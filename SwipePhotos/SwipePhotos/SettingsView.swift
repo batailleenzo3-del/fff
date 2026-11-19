@@ -94,6 +94,27 @@ struct SettingsView: View {
                     }
                 }
 
+                #if DEBUG
+                Section {
+                    LabeledContent("Swipes gratuits utilisés", value: "\(store.freeSwipesUsed) / \(AppConfig.freeSwipeLimit)")
+                    LabeledContent("Version illimitée", value: purchases.isPro ? "Achetée" : "Non")
+                    LabeledContent("Produit StoreKit", value: purchases.product?.displayPrice ?? "non chargé")
+                    Button("Aller à 95 swipes (tester le paiement)") {
+                        store.debugSetFreeSwipesUsed(AppConfig.freeSwipeLimit - 5)
+                    }
+                    Button("Remettre les swipes gratuits à 0") {
+                        store.debugSetFreeSwipesUsed(0)
+                    }
+                    Button("Revenir à la version gratuite", role: .destructive) {
+                        Task { await purchases.debugReset() }
+                    }
+                } header: {
+                    Text("🧪 Mode test (invisible sur l'App Store)")
+                } footer: {
+                    Text("Pour effacer un faux achat : dans Xcode, menu Debug → StoreKit → Manage Transactions, sélectionne l'achat puis supprime-le.")
+                }
+                #endif
+
                 Section(loc("settings_about")) {
                     Button {
                         rateApp()

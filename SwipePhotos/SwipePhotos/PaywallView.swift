@@ -90,12 +90,16 @@ struct PaywallView: View {
                             .tint(.pink)
 
                             #if DEBUG
-                            Button("🧪 Débloquer Pro (test uniquement)") {
+                            // Visible seulement si le faux achat StoreKit n'est pas disponible
+                            // (app lancée sans Xcode) : sinon on garde l'écran identique à la vraie app.
+                            if purchases.hasLoadedProducts && purchases.product == nil {
+                            Button("🧪 Débloquer (test uniquement)") {
                                 purchases.debugUnlock()
                                 dismiss()
                             }
                             .font(.footnote)
                             .foregroundStyle(.secondary)
+                            }
                             #endif
                         }
                     }

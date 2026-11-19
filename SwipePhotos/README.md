@@ -116,16 +116,26 @@ SwipePhotos/
 
 ## 4. Tester l'achat Pro sans payer
 
-**A. Le bouton de test (le plus simple)**
-Dans l'écran de paiement (⚙︎ → « Passer à la version illimitée »), un bouton **🧪 Débloquer Pro (test uniquement)** apparaît. Il n'existe **que** quand l'app est lancée depuis Xcode : il disparaît automatiquement dans la version App Store.
+Le projet est déjà configuré en **mode démo** : quand tu lances l'app avec ▶︎ depuis Xcode, l'achat utilise le fichier `SwipePhotos.storekit` (produit à **4,99 €**). Tout s'affiche comme dans la vraie app : écran de paiement, **vraie fenêtre de paiement Apple** (avec la mention « Environment: Xcode »), Face ID simulé, déblocage, « Restaurer mes achats »… **sans aucun paiement réel**.
 
-**B. Simuler un vrai achat avec le fichier StoreKit**
-1. Dans Xcode : menu **Product → Scheme → Edit Scheme…**
-2. À gauche **Run**, onglet **Options**.
-3. **StoreKit Configuration** : choisis **SwipePhotos.storekit** → **Close**.
-4. Relance avec ▶︎ : « Débloquer pour 4,99 € » ouvre une fausse fenêtre d'achat Apple (aucun paiement réel).
+### Tester le passage au 100e swipe
+1. Lance l'app avec **▶︎** (iPhone branché).
+2. ⚙︎ **Réglages** → tout en bas, section **🧪 Mode test** → **Aller à 95 swipes**.
+3. Ferme les Réglages et swipe 5 photos : au 100e, l'écran de paiement s'ouvre et les cartes se bloquent.
+4. Touche **Débloquer pour 4,99 €** → la fenêtre Apple s'ouvre → confirme : c'est débloqué, les swipes sont illimités.
 
-**Remettre le compteur de swipes à zéro pour tester** : supprime l'app de l'iPhone puis relance-la avec ▶︎.
+### Recommencer le test
+- ⚙︎ → 🧪 Mode test → **Revenir à la version gratuite** et **Remettre les swipes gratuits à 0**.
+- Pour effacer le faux achat lui-même : dans Xcode, menu **Debug → StoreKit → Manage Transactions**, sélectionne l'achat → icône 🗑.
+
+> La section 🧪 Mode test n'apparaît **que** quand l'app est lancée depuis Xcode : elle n'existe pas dans la version App Store.
+
+### Si le prix ne s'affiche pas (« Prix indisponible · Réessayer »)
+Le faux achat ne fonctionne que si l'app est lancée **avec ▶︎ depuis Xcode** (pas en l'ouvrant depuis l'écran d'accueil). Dans ce cas un bouton **🧪 Débloquer (test uniquement)** apparaît en secours.
+Si le problème persiste même avec ▶︎ : menu **Product → Scheme → Edit Scheme… → Run → Options → StoreKit Configuration** → choisis **SwipePhotos.storekit**.
+
+### Plus tard : la version finale
+Quand ton compte développeur payant sera actif, tu créeras le vrai achat intégré dans App Store Connect (partie 6.4) avec le même identifiant que `proProductID`. **Le code ne change pas** : sur l'App Store, la même fenêtre Apple débitera de vrais paiements.
 
 ---
 

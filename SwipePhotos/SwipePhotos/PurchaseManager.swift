@@ -109,6 +109,14 @@ final class PurchaseManager: ObservableObject {
         UserDefaults.standard.set(true, forKey: "pro.debugUnlocked")
         setPro(true)
     }
+
+    /// Uniquement pendant les tests : revient à la version gratuite.
+    /// (Les faux achats StoreKit se suppriment dans Xcode : Debug → StoreKit → Manage Transactions.)
+    func debugReset() async {
+        UserDefaults.standard.set(false, forKey: "pro.debugUnlocked")
+        setPro(false)
+        await refreshEntitlements()
+    }
     #endif
 
     private func setPro(_ value: Bool) {

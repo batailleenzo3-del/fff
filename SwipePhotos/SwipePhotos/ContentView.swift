@@ -19,6 +19,7 @@ struct ContentView: View {
     @State private var isAnimatingOut = false
     @State private var showTrash = false
     @State private var showSourcePicker = false
+    @State private var refreshSpins = 0
     @State private var zone = 0 // -1 corbeille, 0 neutre, 1 garder (vibration)
 
     private let threshold: CGFloat = 110
@@ -82,25 +83,6 @@ struct ContentView: View {
             .pickerStyle(.segmented)
             .padding(.horizontal, 20)
 
-            if store.newItemsCount > 0 && !store.isLoading {
-                Button {
-                    store.showNewItems()
-                } label: {
-                    Label(store.newItemsCount > 1
-                          ? tr("\(store.newItemsCount) nouvelles photos · Afficher", "\(store.newItemsCount) new photos · Show")
-                          : tr("1 nouvelle photo · Afficher", "1 new photo · Show"),
-                          systemImage: "sparkles")
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(.linearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing),
-                                    in: Capsule())
-                        .foregroundStyle(.white)
-                }
-                .buttonStyle(.plain)
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
-
             ZStack {
                 if !store.hasLoaded || store.isLoading {
                     VStack(spacing: 14) {
@@ -159,7 +141,7 @@ struct ContentView: View {
 
             Spacer(minLength: 12)
 
-            refreshMenu
+            refreshButton
 
             Button {
                 showTrash = true
@@ -183,31 +165,22 @@ struct ContentView: View {
         .padding(.top, 8)
     }
 
-    /// Bouton ↻ : nouvelles photos ou retour au début.
-    private var refreshMenu: some View {
-        Menu {
-            Button {
-                store.showNewItems()
-            } label: {
-                Label(store.newItemsCount > 0
-                      ? tr("Afficher les nouvelles photos (\(store.newItemsCount))", "Show new photos (\(store.newItemsCount))")
-                      : tr("Chercher de nouvelles photos", "Check for new photos"),
-                      systemImage: "sparkles")
-            }
-            Button {
-                store.restartFromNewest()
-            } label: {
-                Label(tr("Repartir des plus récentes", "Start over from newest"), systemImage: "arrow.counterclockwise")
-            }
-            Text(tr("Tu reprends toujours là où tu t'es arrêté. Retour automatique aux plus récentes toutes les 24 h.",
-                    "You always resume where you left off. Automatic return to newest every 24 h."))
+    /// Bouton ↻ : un seul appui = retour aux photos les plus récentes de la galerie.
+    private var refreshButton: some View {
+        Button {
+            refreshSpins += 1
+            showTrash = false
+            store.refreshToNewest()
         } label: {
             Image(systemName: "arrow.clockwise")
                 .font(.headline)
                 .foregroundStyle(.white)
+                .rotationEffect(.degrees(Double(refreshSpins) * 360))
+                .animation(.easeInOut(duration: 0.5), value: refreshSpins)
                 .frame(width: 42, height: 42)
                 .background(Color.white.opacity(0.1), in: Circle())
                 .overlay(alignment: .topTrailing) {
+                    // Point rose = de nouvelles photos sont arrivées
                     if store.newItemsCount > 0 {
                         Circle()
                             .fill(Color.pink)
@@ -216,7 +189,9 @@ struct ContentView: View {
                     }
                 }
         }
-        .accessibilityLabel(tr("Actualiser", "Refresh"))
+        .buttonStyle(.plain)
+        .sensoryFeedback(.impact, trigger: refreshSpins)
+        .accessibilityLabel(tr("Revenir aux photos les plus récentes", "Back to newest photos"))
     }
 
     private var subtitle: String {
@@ -283,7 +258,7 @@ struct ContentView: View {
                 showSourcePicker = true
             }
             .buttonStyle(.bordered)
-            Button(tr("Revoir depuis les plus récentes", "Review again from newest")) { store.restartFromNewest() }
+            Button(tr("Revoir depuis les plus récentes", "Review again from newest")) { store.refreshToNewest() }
                 .foregroundStyle(.secondary)
         }
         .multilineTextAlignment(.center)

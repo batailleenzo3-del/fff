@@ -25,8 +25,7 @@ Lis ce guide dans l'ordre. Chaque étape est expliquée clic par clic.
 | **Jeter** | Swipe à gauche (ou bouton ✕). La photo va dans une corbeille : **rien n'est supprimé tout de suite** |
 | **Annuler** | Bouton jaune ↩︎ : la dernière carte revient |
 | **Reprise** | Quand tu fermes et rouvres l'app, tu **reprends exactement à la dernière photo swipée** (rien n'est rechargé pendant une session) |
-| **Nouvelles photos** | Si tu prends des photos entre-temps, un bouton **« 3 nouvelles photos · Afficher »** apparaît : elles passent en premier, puis tu reprends où tu étais |
-| **Bouton ↻** (en haut) | « Afficher les nouvelles photos » ou « Repartir des plus récentes » (revoir toute la galerie, même ce que tu as déjà gardé) |
+| **Bouton ↻** (en haut) | Un appui = retour immédiat aux **photos les plus récentes** de la galerie. Un point rose apparaît dessus quand de nouvelles photos sont arrivées |
 | **Toutes les 24 h** | L'app repart automatiquement des photos les plus récentes de toute la galerie |
 | **Choisir quoi trier** | Touche le **titre en haut à gauche** (« Récentes ⌄ ») : toute la galerie, **un ou plusieurs albums** (coche-les), ou **un mois précis** |
 | **Photos / Vidéos** | Le sélecteur « Tout · Photos · Vidéos » sous le titre |

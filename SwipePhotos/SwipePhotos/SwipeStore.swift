@@ -121,15 +121,12 @@ final class SwipeStore: ObservableObject {
         }
     }
 
-    /// Bouton "Repartir des plus récentes" : on revoit tout, même ce qui a déjà été gardé.
-    func restartFromNewest() {
+    /// Bouton ↻ : retour aux photos les plus récentes de toute la galerie
+    /// (on revoit tout, même ce qui a déjà été gardé).
+    func refreshToNewest() {
         beginNewCycle()
-        reload()
-    }
-
-    /// Bouton "Afficher les nouvelles photos" : les nouvelles en premier,
-    /// puis on reprend exactement là où on était.
-    func showNewItems() {
+        source = .recent
+        saveSource()
         reload()
     }
 

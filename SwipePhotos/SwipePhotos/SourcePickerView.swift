@@ -8,6 +8,7 @@ import Combine
 import Photos
 
 struct SourcePickerView: View {
+    @Environment(\.appTheme) private var theme
     @ObservedObject var store: SwipeStore
     @Environment(\.dismiss) private var dismiss
 
@@ -76,7 +77,7 @@ struct SourcePickerView: View {
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
-                            .background(LinearGradient.brand,
+                            .background(theme.gradient,
                                         in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                             .foregroundStyle(.white)
                     }
@@ -142,7 +143,7 @@ struct SourcePickerView: View {
             HStack(spacing: 12) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
-                    .foregroundStyle(isSelected ? Color.pink : Color.secondary)
+                    .foregroundStyle(isSelected ? theme.primary : Color.secondary)
                 Text(album.title)
                     .foregroundStyle(.primary)
                 Spacer()
@@ -156,7 +157,7 @@ struct SourcePickerView: View {
     private func row(icon: String, title: String, detail: String, selected: Bool) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .foregroundStyle(.pink)
+                .foregroundStyle(theme.primary)
                 .frame(width: 24)
             Text(title)
                 .foregroundStyle(.primary)
@@ -166,7 +167,7 @@ struct SourcePickerView: View {
                 .monospacedDigit()
             if selected {
                 Image(systemName: "checkmark")
-                    .foregroundStyle(.pink)
+                    .foregroundStyle(theme.primary)
             }
         }
     }

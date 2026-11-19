@@ -9,6 +9,7 @@ import StoreKit
 import UIKit
 
 struct SettingsView: View {
+    @Environment(\.appTheme) private var theme
     @ObservedObject var store: SwipeStore
     @ObservedObject var purchases: PurchaseManager
     @Environment(\.dismiss) private var dismiss
@@ -18,6 +19,9 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.sortOrder) private var sortOrderRaw = SortOrder.newest.rawValue
     @AppStorage(SettingsKey.cycle) private var cycleRaw = CycleOption.day.rawValue
     @AppStorage(SettingsKey.appearance) private var appearanceRaw = AppearanceOption.system.rawValue
+    @AppStorage(SettingsKey.theme) private var themeRaw = AppTheme.neon.rawValue
+    @AppStorage(SettingsKey.glassLevel) private var glassRaw = GlassLevel.balanced.rawValue
+    @AppStorage(SettingsKey.photoBackdrop) private var photoBackdrop = true
     @AppStorage(SettingsKey.haptics) private var hapticsEnabled = true
     @AppStorage(SettingsKey.videoMuted) private var videoMuted = true
     @AppStorage(SettingsKey.onboardingDone) private var onboardingDone = true
@@ -58,6 +62,8 @@ struct SettingsView: View {
                 } footer: {
                     Text(loc("settings_cycle_footer"))
                 }
+
+                personalizationSection
 
                 Section(loc("settings_appearance")) {
                     Picker(selection: $appearanceRaw) {
@@ -146,7 +152,7 @@ struct SettingsView: View {
             }
             .scrollContentBackground(.hidden)
             .background(AppBackground())
-            .tint(.pink)
+            .tint(theme.primary)
             .navigationTitle(loc("settings_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -163,6 +169,68 @@ struct SettingsView: View {
                 FeedbackView()
                     .appAppearance()
             }
+        }
+    }
+
+    // MARK: Personnalisation
+
+    private var personalizationSection: some View {
+        Section {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 16) {
+                ForEach(AppTheme.allCases) { item in
+                    let selected = item.rawValue == themeRaw
+                    Button {
+                        withAnimation(.snappy) { themeRaw = item.rawValue }
+                    } label: {
+                        VStack(spacing: 6) {
+                            Circle()
+                                .fill(item.diagonalGradient)
+                                .frame(width: 46, height: 46)
+                                .overlay {
+                                    if selected {
+                                        Image(systemName: "checkmark")
+                                            .font(.headline.weight(.bold))
+                                            .foregroundStyle(.white)
+                                    }
+                                }
+                                .padding(4)
+                                .overlay(
+                                    Circle().strokeBorder(item.primary, lineWidth: selected ? 2.5 : 0)
+                                )
+                                .shadow(color: item.primary.opacity(selected ? 0.5 : 0), radius: 8)
+                            Text(item.title)
+                                .font(.caption2.weight(selected ? .bold : .regular))
+                                .foregroundStyle(.primary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(item.title)
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                }
+            }
+            .padding(.vertical, 8)
+
+            VStack(alignment: .leading, spacing: 10) {
+                Label(loc("settings_transparency"), systemImage: "drop.halffull")
+                Picker(loc("settings_transparency"), selection: $glassRaw) {
+                    ForEach(GlassLevel.allCases) { level in
+                        Text(level.title).tag(level.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            .padding(.vertical, 4)
+
+            Toggle(isOn: $photoBackdrop) {
+                Label(loc("settings_photo_backdrop"), systemImage: "photo.fill")
+            }
+        } header: {
+            Text(loc("settings_personalize"))
+        } footer: {
+            Text(loc("settings_transparency_footer"))
         }
     }
 
@@ -201,7 +269,7 @@ struct SettingsView: View {
                                 .font(.subheadline.weight(.bold))
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
-                                .background(LinearGradient.brand, in: Capsule())
+                                .background(theme.gradient, in: Capsule())
                                 .foregroundStyle(.white)
                         }
                     }
@@ -235,6 +303,7 @@ struct SettingsView: View {
 // MARK: - Statistiques
 
 struct StatsView: View {
+    @Environment(\.appTheme) private var theme
     @ObservedObject var store: SwipeStore
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
@@ -245,7 +314,7 @@ struct StatsView: View {
                 VStack(spacing: 6) {
                     Image(systemName: "externaldrive.fill.badge.checkmark")
                         .font(.system(size: 34))
-                        .foregroundStyle(LinearGradient.brand)
+                        .foregroundStyle(theme.gradient)
                     Text(L10n.bytes(store.totalFreedBytes))
                         .font(.system(size: 44, weight: .heavy, design: .rounded))
                         .contentTransition(.numericText())
@@ -258,7 +327,7 @@ struct StatsView: View {
                 .glassBackground(in: RoundedRectangle(cornerRadius: 28, style: .continuous))
 
                 LazyVGrid(columns: columns, spacing: 12) {
-                    statCard(value: store.totalSwiped, label: loc("stats_swiped"), icon: "hand.draw.fill", color: .purple)
+                    statCard(value: store.totalSwiped, label: loc("stats_swiped"), icon: "hand.draw.fill", color: theme.secondary)
                     statCard(value: store.totalDeletedCount, label: loc("stats_deleted"), icon: "trash.fill", color: .red)
                     statCard(value: store.totalKept, label: loc("stats_kept"), icon: "heart.fill", color: .green)
                     statCard(value: store.totalFavorited, label: loc("stats_favorites"), icon: "star.fill", color: .yellow)
@@ -270,7 +339,7 @@ struct StatsView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     ProgressView(value: cycleProgress)
-                        .tint(.pink)
+                        .tint(theme.primary)
                 }
                 .padding(20)
                 .frame(maxWidth: .infinity, alignment: .leading)

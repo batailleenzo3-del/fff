@@ -17,6 +17,9 @@ nonisolated enum SettingsKey {
     static let haptics = "settings.haptics"
     static let videoMuted = "swipe.videoMuted"
     static let reviewRequested = "settings.reviewRequested"
+    static let theme = "settings.theme"
+    static let glassLevel = "settings.glassLevel"
+    static let photoBackdrop = "settings.photoBackdrop"
 }
 
 /// Ordre d'affichage des médias.

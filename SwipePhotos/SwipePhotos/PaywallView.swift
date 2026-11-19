@@ -8,6 +8,7 @@ import Combine
 import StoreKit
 
 struct PaywallView: View {
+    @Environment(\.appTheme) private var theme
     @ObservedObject var purchases: PurchaseManager
     @Environment(\.dismiss) private var dismiss
 
@@ -73,7 +74,7 @@ struct PaywallView: View {
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 17)
-                                .background(LinearGradient.brand, in: Capsule())
+                                .background(theme.gradient, in: Capsule())
                                 .foregroundStyle(.white)
                             }
                             .buttonStyle(.plain)
@@ -87,7 +88,7 @@ struct PaywallView: View {
                                 Task { await purchases.restore() }
                             }
                             .font(.footnote.weight(.semibold))
-                            .tint(.pink)
+                            .tint(theme.primary)
 
                             #if DEBUG
                             // Visible seulement si le faux achat StoreKit n'est pas disponible
@@ -128,7 +129,7 @@ struct PaywallView: View {
         HStack(spacing: 14) {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundStyle(.pink)
+                .foregroundStyle(theme.primary)
                 .frame(width: 30)
             Text(text)
                 .font(.body)

@@ -9,6 +9,7 @@ import Photos
 import StoreKit
 
 struct TrashView: View {
+    @Environment(\.appTheme) private var theme
     @ObservedObject var store: SwipeStore
     @ObservedObject var purchases: PurchaseManager
     @Environment(\.dismiss) private var dismiss
@@ -114,7 +115,7 @@ struct TrashView: View {
             if let result = lastResult {
                 Image(systemName: "sparkles")
                     .font(.system(size: 52))
-                    .foregroundStyle(LinearGradient.brand)
+                    .foregroundStyle(theme.gradient)
                     .frame(width: 110, height: 110)
                     .glassBackground(in: Circle())
                 Text(loc("deleted_result", result.count))

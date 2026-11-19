@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    @Environment(\.appTheme) private var theme
     let onFinish: () -> Void
     @State private var page = 0
 
@@ -55,7 +56,7 @@ struct OnboardingView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
-                    .background(LinearGradient.brand, in: Capsule())
+                    .background(theme.gradient, in: Capsule())
                     .foregroundStyle(.white)
             }
             .buttonStyle(.plain)
@@ -73,7 +74,7 @@ struct OnboardingView: View {
             } else {
                 Image(systemName: item.icon)
                     .font(.system(size: 64))
-                    .foregroundStyle(item.color)
+                    .foregroundStyle(index == 2 ? theme.secondary : item.color)
                     .frame(width: 150, height: 150)
                     .glassBackground(in: Circle())
             }
@@ -97,14 +98,14 @@ struct OnboardingView: View {
     private var demoCard: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(LinearGradient(colors: [.pink.opacity(0.9), .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .fill(theme.diagonalGradient)
                 .frame(width: 150, height: 200)
                 .overlay {
                     Image(systemName: "photo")
                         .font(.system(size: 54))
                         .foregroundStyle(.white.opacity(0.9))
                 }
-                .shadow(color: .purple.opacity(0.4), radius: 20, y: 10)
+                .shadow(color: theme.secondary.opacity(0.45), radius: 20, y: 10)
                 .phaseAnimator([0.0, 1.0, 0.0, -1.0]) { content, phase in
                     content
                         .rotationEffect(.degrees(phase * 12), anchor: .bottom)

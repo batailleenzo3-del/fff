@@ -1,4 +1,4 @@
-# 📸 Swipe Photos — le guide complet (version 2.1)
+# 📸 Swipe Photos — le guide complet (version 2.3)
 
 Ce dossier contient **tout** : le projet Xcode prêt à ouvrir, l'icône, l'achat intégré, les textes App Store en 5 langues, un studio de captures d'écran et la politique de confidentialité.
 Lis ce guide dans l'ordre. Chaque étape est expliquée clic par clic.
@@ -32,6 +32,12 @@ Lis ce guide dans l'ordre. Chaque étape est expliquée clic par clic.
 | **💡** | Idées & bugs : les utilisateurs t'envoient leurs suggestions par e-mail |
 | **⚙︎** | Réglages + statistiques |
 | **🗑 N** | Corbeille : récupérer des photos ou tout supprimer en **une seule** confirmation |
+
+### Nouveautés de la version 2.3 — personnalisation
+- **8 couleurs d'accentuation** (⚙︎ → Personnalisation) : Néon (défaut), Océan, Émeraude, Soleil, Rubis, Or, Lavande, Graphite. Elles changent les boutons, dégradés, fonds lumineux, onglets, confettis… en direct.
+- **Transparence du verre** : Discret, Équilibré ou **Maximal** (verre « clair » d'iOS 26, quasi transparent).
+- **Fond coloré par la photo** : la photo affichée, très floutée, colore le fond de l'écran — le verre en prend les couleurs (désactivable).
+- **Plus de Liquid Glass** : nouvelle barre d'onglets en verre avec pastille animée, boutons qui fusionnent (iOS 26), fonds lumineux aux couleurs du thème.
 
 ### Nouveautés de la version 2.1
 - **100 swipes gratuits** (garder, supprimer ou favori), puis achat unique **à vie** de la version illimitée (**4,99 €**, prix réglé dans App Store Connect et affiché automatiquement par l'App Store dans la devise de l'utilisateur).
@@ -83,7 +89,7 @@ SwipePhotos/
 │   ├── FeedbackView.swift          ← onglet Idées & bugs
 │   ├── OnboardingView.swift        ← tutoriel
 │   ├── MediaViews.swift            ← cartes photo/vidéo, miniatures
-│   ├── Effects.swift               ← Liquid Glass, fond, confettis
+│   ├── Effects.swift               ← couleurs de thème, Liquid Glass + transparence, fonds, confettis
 │   ├── SwipeStore.swift            ← la logique (pile, corbeille, cycle, stats)
 │   ├── LibraryService.swift        ← lecture/suppression dans la galerie
 │   ├── SimilarityService.swift     ← détection des doublons

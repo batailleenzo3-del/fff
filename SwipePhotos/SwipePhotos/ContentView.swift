@@ -9,6 +9,7 @@ import Photos
 import UIKit
 
 struct ContentView: View {
+    @Environment(\.appTheme) private var theme
     @StateObject private var store = SwipeStore()
     @StateObject private var purchases = PurchaseManager()
     @AppStorage(SettingsKey.onboardingDone) private var onboardingDone = false
@@ -56,6 +57,7 @@ struct ContentView: View {
 // MARK: - Autorisation
 
 struct PermissionView: View {
+    @Environment(\.appTheme) private var theme
     @ObservedObject var store: SwipeStore
 
     var body: some View {
@@ -63,7 +65,7 @@ struct PermissionView: View {
             Spacer()
             Image(systemName: "photo.stack.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(LinearGradient.brand)
+                .foregroundStyle(theme.gradient)
                 .frame(width: 130, height: 130)
                 .glassBackground(in: Circle())
             Text(loc("permission_title"))
@@ -81,7 +83,7 @@ struct PermissionView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
-                    .background(LinearGradient.brand, in: Capsule())
+                    .background(theme.gradient, in: Capsule())
                     .foregroundStyle(.white)
             }
             .buttonStyle(.plain)
@@ -92,6 +94,7 @@ struct PermissionView: View {
 }
 
 struct DeniedView: View {
+    @Environment(\.appTheme) private var theme
     var body: some View {
         VStack(spacing: 18) {
             Image(systemName: "lock.fill")
@@ -110,7 +113,7 @@ struct DeniedView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .tint(.pink)
+            .tint(theme.primary)
         }
         .padding(32)
         .frame(maxWidth: 520)

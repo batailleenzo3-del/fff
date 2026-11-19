@@ -51,6 +51,7 @@ enum FeedbackCategory: String, CaseIterable, Identifiable {
 }
 
 struct FeedbackView: View {
+    @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
 
@@ -148,7 +149,7 @@ struct FeedbackView: View {
                     Label(loc("feedback_device_info"), systemImage: "iphone")
                         .font(.subheadline)
                 }
-                .tint(.pink)
+                .tint(theme.primary)
 
                 // Envoi
                 Button {
@@ -158,7 +159,7 @@ struct FeedbackView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
-                        .background(canSend ? AnyShapeStyle(LinearGradient.brand) : AnyShapeStyle(Color.gray.opacity(0.4)),
+                        .background(canSend ? AnyShapeStyle(theme.gradient) : AnyShapeStyle(Color.gray.opacity(0.4)),
                                     in: Capsule())
                         .foregroundStyle(.white)
                 }
@@ -170,7 +171,7 @@ struct FeedbackView: View {
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                 }
-                .tint(.pink)
+                .tint(theme.primary)
                 .disabled(!canSend)
             }
             .padding(20)
@@ -195,7 +196,7 @@ struct FeedbackView: View {
                     .minimumScaleFactor(0.8)
                 Spacer(minLength: 0)
                 if selected {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.pink)
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.primary)
                 }
             }
             .padding(.horizontal, 12)
@@ -205,7 +206,7 @@ struct FeedbackView: View {
                              interactive: true)
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(selected ? Color.pink : Color.clear, lineWidth: 1.5)
+                    .strokeBorder(selected ? theme.primary : Color.clear, lineWidth: 1.5)
             )
         }
         .buttonStyle(.plain)
@@ -216,7 +217,7 @@ struct FeedbackView: View {
         VStack(spacing: 16) {
             Image(systemName: "heart.text.square.fill")
                 .font(.system(size: 52))
-                .foregroundStyle(LinearGradient.brand)
+                .foregroundStyle(theme.gradient)
                 .frame(width: 120, height: 120)
                 .glassBackground(in: Circle())
             Text(loc("feedback_thanks_title"))
@@ -226,7 +227,7 @@ struct FeedbackView: View {
                 .multilineTextAlignment(.center)
             Button(loc("close")) { dismiss() }
                 .buttonStyle(.borderedProminent)
-                .tint(.pink)
+                .tint(theme.primary)
         }
         .padding(32)
     }

@@ -8,6 +8,7 @@ import Combine
 import Photos
 
 struct DuplicatesView: View {
+    @Environment(\.appTheme) private var theme
     @ObservedObject var store: SwipeStore
     @Binding var showTrash: Bool
 
@@ -38,13 +39,13 @@ struct DuplicatesView: View {
         VStack(spacing: 16) {
             Image(systemName: "sparkle.magnifyingglass")
                 .font(.system(size: 44))
-                .foregroundStyle(LinearGradient.brand)
+                .foregroundStyle(theme.gradient)
                 .frame(width: 100, height: 100)
                 .glassBackground(in: Circle())
             Text(loc("dup_scanning", Int(progress * 100)))
                 .font(.headline)
             ProgressView(value: progress)
-                .tint(.pink)
+                .tint(theme.primary)
                 .frame(maxWidth: 260)
             Text(loc("dup_scanning_hint"))
                 .font(.footnote)

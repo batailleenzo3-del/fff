@@ -17,6 +17,7 @@ enum MainTab: Hashable {
 }
 
 struct SwipeScreen: View {
+    @Environment(\.appTheme) private var theme
     @ObservedObject var store: SwipeStore
     @ObservedObject var purchases: PurchaseManager
 
@@ -32,6 +33,8 @@ struct SwipeScreen: View {
     @State private var showingDuplicates = false
     @State private var zone = 0 // -1 corbeille, 0 neutre, 1 garder, 2 favori
     @State private var refreshSpins = 0
+    @Namespace private var tabNamespace
+    @AppStorage(SettingsKey.photoBackdrop) private var photoBackdrop = true
 
     private let threshold: CGFloat = 110
 
@@ -56,6 +59,15 @@ struct SwipeScreen: View {
             }
         }
         .padding(.bottom, 10)
+        .background {
+            // Fond flou fait à partir de la photo affichée : le verre prend ses couleurs
+            if photoBackdrop && !showingDuplicates, let asset = store.current {
+                PhotoBackdrop(asset: asset)
+                    .id(asset.localIdentifier)
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.5), value: store.current?.localIdentifier)
         .overlay {
             ConfettiView(trigger: store.celebrateTrigger)
         }
@@ -180,7 +192,7 @@ struct SwipeScreen: View {
                     // Point rose = de nouvelles photos sont arrivées
                     if store.newItemsCount > 0 {
                         Circle()
-                            .fill(Color.pink)
+                            .fill(theme.primary)
                             .frame(width: 11, height: 11)
                             .offset(x: 1, y: -1)
                     }
@@ -193,27 +205,54 @@ struct SwipeScreen: View {
 
     // MARK: Onglets
 
+    /// Barre d'onglets en verre (Tout · Photos · Vidéos · Doublons).
     private var tabs: some View {
-        Picker(loc("media_type"), selection: Binding<MainTab>(
-            get: { showingDuplicates ? .duplicates : .media(store.filter) },
-            set: { newValue in
-                switch newValue {
-                case .media(let filter):
-                    showingDuplicates = false
-                    store.select(filter: filter)
-                case .duplicates:
-                    showingDuplicates = true
+        let current: MainTab = showingDuplicates ? .duplicates : .media(store.filter)
+        let items: [(tab: MainTab, title: String)] =
+            MediaFilter.allCases.map { (tab: MainTab.media($0), title: $0.title) }
+            + [(tab: MainTab.duplicates, title: loc("tab_duplicates"))]
+        return HStack(spacing: 4) {
+            ForEach(items, id: \.tab) { item in
+                let selected = item.tab == current
+                Button {
+                    select(tab: item.tab)
+                } label: {
+                    Text(item.title)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .foregroundStyle(selected ? Color.white : Color.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background {
+                            if selected {
+                                Capsule()
+                                    .fill(theme.gradient)
+                                    .shadow(color: theme.primary.opacity(0.45), radius: 8, y: 3)
+                                    .matchedGeometryEffect(id: "selectedTab", in: tabNamespace)
+                            }
+                        }
+                        .contentShape(Capsule())
                 }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(selected ? .isSelected : [])
             }
-        )) {
-            ForEach(MediaFilter.allCases) { filter in
-                Text(filter.title).tag(MainTab.media(filter))
-            }
-            Text(loc("tab_duplicates")).tag(MainTab.duplicates)
         }
-        .pickerStyle(.segmented)
+        .padding(4)
+        .glassBackground(in: Capsule())
         .padding(.horizontal, 20)
         .frame(maxWidth: 700)
+        .animation(.snappy(duration: 0.3), value: current)
+    }
+
+    private func select(tab: MainTab) {
+        switch tab {
+        case .media(let filter):
+            showingDuplicates = false
+            store.select(filter: filter)
+        case .duplicates:
+            showingDuplicates = true
+        }
     }
 
     private var limitedBanner: some View {
@@ -228,7 +267,7 @@ struct SwipeScreen: View {
                 store.presentLimitedPicker()
             }
             .font(.footnote.weight(.semibold))
-            .tint(.pink)
+            .tint(theme.primary)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -296,7 +335,7 @@ struct SwipeScreen: View {
                     .font(.headline)
                     .padding(.horizontal, 28)
                     .padding(.vertical, 14)
-                    .background(LinearGradient.brand, in: Capsule())
+                    .background(theme.gradient, in: Capsule())
                     .foregroundStyle(.white)
             }
             .buttonStyle(.plain)
@@ -318,7 +357,7 @@ struct SwipeScreen: View {
                 Spacer(minLength: 4)
                 Text(loc("go_pro"))
                     .font(.footnote.weight(.bold))
-                    .foregroundStyle(.pink)
+                    .foregroundStyle(theme.primary)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 9)
@@ -330,6 +369,7 @@ struct SwipeScreen: View {
     }
 
     private var controls: some View {
+        GlassGroup(spacing: 18) {
         HStack(spacing: 22) {
             roundButton(icon: "xmark", color: .red, size: 66, label: loc("action_delete")) { swipe(.trash) }
                 .disabled(store.current == nil)
@@ -340,6 +380,7 @@ struct SwipeScreen: View {
                 .disabled(store.current == nil)
             roundButton(icon: "heart.fill", color: .green, size: 66, label: loc("action_keep")) { swipe(.keep) }
                 .disabled(store.current == nil)
+        }
         }
     }
 

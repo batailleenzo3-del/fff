@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio de captures App Store</title>
+<style>
+  :root {
+    --bg: #f6f4fb; --panel: #ffffff; --text: #1d1b22; --muted: #6b6676; --line: #e4dff0; --accent: #d63384;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #121018; --panel: #1c1924; --text: #f1eef7; --muted: #a39db0; --line: #2d2838; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--text); }
+  header { padding: 20px 24px 8px; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; }
+  main { display: grid; grid-template-columns: 340px 1fr; gap: 24px; padding: 16px 24px 40px; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 6px; }
+  input[type=text], select { width: 100%; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font-size: 14px; }
+  input[type=file] { width: 100%; font-size: 13px; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  button { margin-top: 18px; width: 100%; padding: 12px; border: 0; border-radius: 12px; font-size: 15px; font-weight: 700; color: #fff; background: linear-gradient(90deg, #ff2d78, #9b3bff); cursor: pointer; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+  .preview { display: flex; justify-content: center; align-items: flex-start; }
+  canvas { width: 100%; max-width: 380px; height: auto; border-radius: 18px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Studio de captures App Store</h1>
+  <p>Importe une capture de l'app, choisis un texte, télécharge l'image au bon format. Rien n'est envoyé sur Internet.</p>
+</header>
+<main>
+  <section class="panel">
+    <label for="file">1. Capture d'écran de l'app</label>
+    <input id="file" type="file" accept="image/*">
+
+    <label for="device">2. Format</label>
+    <select id="device">
+      <option value="1320x2868">iPhone 6,9" (1320 × 2868) — obligatoire</option>
+      <option value="1290x2796">iPhone 6,7" (1290 × 2796)</option>
+      <option value="2064x2752">iPad 13" (2064 × 2752) — obligatoire si iPad</option>
+    </select>
+
+    <label for="lang">3. Langue des textes proposés</label>
+    <select id="lang">
+      <option value="fr">Français</option>
+      <option value="en">English</option>
+      <option value="es">Español</option>
+      <option value="de">Deutsch</option>
+      <option value="it">Italiano</option>
+    </select>
+
+    <label for="preset">4. Texte proposé</label>
+    <select id="preset"></select>
+
+    <label for="title">Titre</label>
+    <input id="title" type="text">
+    <label for="subtitle">Sous-titre</label>
+    <input id="subtitle" type="text">
+
+    <label for="theme">5. Fond</label>
+    <select id="theme">
+      <option value="night">Nuit violette</option>
+      <option value="sunset">Coucher de soleil</option>
+      <option value="light">Clair</option>
+    </select>
+
+    <button id="download">Télécharger le PNG</button>
+    <p class="hint">Fais une capture sur ton iPhone (bouton latéral + volume haut), envoie-la sur ton Mac (AirDrop), puis importe-la ici. Répète pour 3 à 5 captures différentes.</p>
+  </section>
+
+  <section class="preview">
+    <canvas id="canvas" width="1320" height="2868"></canvas>
+  </section>
+</main>
+
+<script>
+const PRESETS = {
+  fr: [
+    ["Trie ta galerie en un swipe", "Droite pour garder, gauche pour jeter"],
+    ["Libère des Go en quelques minutes", "Vidéos les plus lourdes en premier"],
+    ["Fini les doublons", "Les photos similaires regroupées automatiquement"],
+    ["Rien n'est perdu", "Corbeille, annulation, une seule confirmation"],
+    ["Album par album, mois par mois", "Trie exactement ce que tu veux"],
+    ["100 % privé", "Tout reste sur ton iPhone"]
+  ],
+  en: [
+    ["Sort your gallery with a swipe", "Right to keep, left to delete"],
+    ["Free up GBs in minutes", "Largest videos first"],
+    ["No more duplicates", "Similar photos grouped automatically"],
+    ["Nothing is lost", "Trash, undo, one single confirmation"],
+    ["Album by album, month by month", "Sort exactly what you want"],
+    ["100% private", "Everything stays on your iPhone"]
+  ],
+  es: [
+    ["Ordena tu galería con un gesto", "Derecha para conservar, izquierda para eliminar"],
+    ["Libera gigas en minutos", "Los vídeos más pesados primero"],
+    ["Adiós a los duplicados", "Fotos similares agrupadas automáticamente"],
+    ["No se pierde nada", "Papelera, deshacer, una sola confirmación"],
+    ["Por álbum o por mes", "Ordena exactamente lo que quieras"],
+    ["100 % privado", "Todo se queda en tu iPhone"]
+  ],
+  de: [
+    ["Sortiere deine Fotos per Wisch", "Rechts behalten, links löschen"],
+    ["Gigabytes in Minuten frei", "Die größten Videos zuerst"],
+    ["Schluss mit Duplikaten", "Ähnliche Fotos automatisch gruppiert"],
+    ["Nichts geht verloren", "Papierkorb, Rückgängig, eine Bestätigung"],
+    ["Nach Album oder Monat", "Sortiere genau, was du willst"],
+    ["100 % privat", "Alles bleibt auf deinem iPhone"]
+  ],
+  it: [
+    ["Ordina la galleria con uno swipe", "Destra per tenere, sinistra per eliminare"],
+    ["Libera GB in pochi minuti", "Prima i video più pesanti"],
+    ["Addio duplicati", "Foto simili raggruppate automaticamente"],
+    ["Niente va perso", "Cestino, annulla, una sola conferma"],
+    ["Per album o per mese", "Ordina esattamente ciò che vuoi"],
+    ["100% privato", "Tutto resta sul tuo iPhone"]
+  ]
+};
+const THEMES = {
+  night:  { from: "#1b0f2e", to: "#3a1450", glow: "rgba(255,45,120,.35)", text: "#ffffff", sub: "rgba(255,255,255,.75)" },
+  sunset: { from: "#ff2d78", to: "#7b2ff7", glow: "rgba(255,210,120,.35)", text: "#ffffff", sub: "rgba(255,255,255,.85)" },
+  light:  { from: "#fbf8ff", to: "#e9e1f7", glow: "rgba(155,59,255,.25)", text: "#1d1b22", sub: "rgba(29,27,34,.65)" }
+};
+
+const $ = id => document.getElementById(id);
+const canvas = $("canvas"), ctx = canvas.getContext("2d");
+let shot = null;
+
+function fillPresets() {
+  const list = PRESETS[$("lang").value];
+  $("preset").innerHTML = list.map((p, i) => `<option value="${i}">${p[0]}</option>`).join("");
+  applyPreset();
+}
+function applyPreset() {
+  const p = PRESETS[$("lang").value][+$("preset").value || 0];
+  $("title").value = p[0];
+  $("subtitle").value = p[1];
+  draw();
+}
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+function wrap(text, maxWidth) {
+  const words = text.split(" "), lines = [];
+  let line = "";
+  for (const w of words) {
+    const test = line ? line + " " + w : w;
+    if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = w; } else { line = test; }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+function draw() {
+  const [W, H] = $("device").value.split("x").map(Number);
+  canvas.width = W; canvas.height = H;
+  const t = THEMES[$("theme").value];
+
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, t.from); g.addColorStop(1, t.to);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const rg = ctx.createRadialGradient(W * .5, H * .12, 0, W * .5, H * .12, W * .9);
+  rg.addColorStop(0, t.glow); rg.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+
+  // Textes
+  const unit = W / 1320;
+  ctx.textAlign = "center";
+  ctx.fillStyle = t.text;
+  ctx.font = `800 ${Math.round(104 * unit)}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
+  let y = H * 0.085;
+  for (const line of wrap($("title").value, W * 0.86)) { y += 112 * unit; ctx.fillText(line, W / 2, y); }
+  ctx.fillStyle = t.sub;
+  ctx.font = `500 ${Math.round(54 * unit)}px -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif`;
+  y += 30 * unit;
+  for (const line of wrap($("subtitle").value, W * 0.82)) { y += 68 * unit; ctx.fillText(line, W / 2, y); }
+
+  // Téléphone
+  const top = y + 90 * unit;
+  const phoneW = W * 0.78, phoneH = H - top + 200 * unit;
+  const phoneX = (W - phoneW) / 2;
+  const radius = 120 * unit, border = 22 * unit;
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,.45)"; ctx.shadowBlur = 80 * unit; ctx.shadowOffsetY = 30 * unit;
+  roundRect(phoneX, top, phoneW, phoneH, radius); ctx.fillStyle = "#0b0b0f"; ctx.fill();
+  ctx.restore();
+  ctx.save();
+  roundRect(phoneX + border, top + border, phoneW - 2 * border, phoneH - 2 * border, radius - border);
+  ctx.clip();
+  if (shot) {
+    const iw = phoneW - 2 * border, scale = iw / shot.width;
+    ctx.drawImage(shot, phoneX + border, top + border, iw, shot.height * scale);
+  } else {
+    ctx.fillStyle = "#2a2433"; ctx.fillRect(phoneX, top, phoneW, phoneH);
+    ctx.fillStyle = "rgba(255,255,255,.6)";
+    ctx.font = `600 ${Math.round(48 * unit)}px -apple-system, Arial, sans-serif`;
+    ctx.fillText("Importe une capture", W / 2, top + phoneH * 0.3);
+  }
+  ctx.restore();
+}
+
+$("file").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => { shot = img; draw(); };
+  img.src = URL.createObjectURL(f);
+});
+["device", "theme"].forEach(id => $(id).addEventListener("change", draw));
+["title", "subtitle"].forEach(id => $(id).addEventListener("input", draw));
+$("lang").addEventListener("change", fillPresets);
+$("preset").addEventListener("change", applyPreset);
+$("download").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.download = `capture-${$("device").value}-${$("lang").value}.png`;
+  a.href = canvas.toDataURL("image/png");
+  a.click();
+});
+fillPresets();
+</script>
+</body>
+</html>

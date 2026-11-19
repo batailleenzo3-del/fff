@@ -1,10 +1,96 @@
 //
 //  Models.swift
-//  Les types de données de l'app.
+//  Les types de données et réglages de l'app.
 //
 
 import Foundation
 import Photos
+import SwiftUI
+
+// MARK: - Réglages (clés de sauvegarde)
+
+nonisolated enum SettingsKey {
+    static let onboardingDone = "settings.onboardingDone"
+    static let appearance = "settings.appearance"
+    static let sortOrder = "settings.sortOrder"
+    static let cycle = "settings.cycle"
+    static let haptics = "settings.haptics"
+    static let videoMuted = "swipe.videoMuted"
+    static let reviewRequested = "settings.reviewRequested"
+}
+
+/// Ordre d'affichage des médias.
+nonisolated enum SortOrder: String, CaseIterable, Identifiable, Sendable {
+    case newest, oldest, largest
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .newest: return L10n.t("sort_newest")
+        case .oldest: return L10n.t("sort_oldest")
+        case .largest: return L10n.t("sort_largest")
+        }
+    }
+
+    static var current: SortOrder {
+        SortOrder(rawValue: UserDefaults.standard.string(forKey: SettingsKey.sortOrder) ?? "") ?? .newest
+    }
+}
+
+/// Fréquence du retour automatique aux photos les plus récentes.
+nonisolated enum CycleOption: String, CaseIterable, Identifiable, Sendable {
+    case day, twoDays, week, never
+
+    var id: String { rawValue }
+
+    var seconds: TimeInterval? {
+        switch self {
+        case .day: return 24 * 3600
+        case .twoDays: return 48 * 3600
+        case .week: return 7 * 24 * 3600
+        case .never: return nil
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .day: return L10n.t("cycle_day")
+        case .twoDays: return L10n.t("cycle_two_days")
+        case .week: return L10n.t("cycle_week")
+        case .never: return L10n.t("cycle_never")
+        }
+    }
+
+    static var current: CycleOption {
+        CycleOption(rawValue: UserDefaults.standard.string(forKey: SettingsKey.cycle) ?? "") ?? .day
+    }
+}
+
+/// Thème clair / sombre.
+nonisolated enum AppearanceOption: String, CaseIterable, Identifiable, Sendable {
+    case system, light, dark
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .system: return L10n.t("appearance_system")
+        case .light: return L10n.t("appearance_light")
+        case .dark: return L10n.t("appearance_dark")
+        }
+    }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+}
+
+// MARK: - Médias
 
 /// Quels médias afficher.
 nonisolated enum MediaFilter: String, CaseIterable, Identifiable, Sendable {
@@ -14,9 +100,9 @@ nonisolated enum MediaFilter: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .all: return L10n.tr("Tout", "All")
-        case .photos: return L10n.tr("Photos", "Photos")
-        case .videos: return L10n.tr("Vidéos", "Videos")
+        case .all: return L10n.t("filter_all")
+        case .photos: return L10n.t("filter_photos")
+        case .videos: return L10n.t("filter_videos")
         }
     }
 }
@@ -36,7 +122,7 @@ nonisolated struct MonthKey: Hashable, Comparable, Identifiable, Codable, Sendab
 
 /// Ce que l'utilisateur est en train de trier.
 nonisolated enum SortSource: Hashable, Codable, Sendable {
-    /// Mode normal : toute la galerie, des plus récentes aux plus anciennes.
+    /// Mode normal : toute la galerie.
     case recent
     /// Un ou plusieurs albums choisis.
     case albums(ids: [String], title: String)
@@ -60,12 +146,20 @@ nonisolated struct MonthInfo: Identifiable, Hashable, Sendable {
 }
 
 enum SwipeDecision {
-    case keep, trash
+    case keep, trash, favorite
 }
 
 struct HistoryEntry {
     let asset: PHAsset
     let decision: SwipeDecision
+}
+
+/// Groupe de photos similaires (rafale, doublons).
+nonisolated struct SimilarGroup: Identifiable, @unchecked Sendable {
+    let id: String
+    let assets: [PHAsset]
+    /// La photo conseillée à garder.
+    let bestID: String
 }
 
 /// Résultats calculés en arrière-plan puis renvoyés à l'écran.

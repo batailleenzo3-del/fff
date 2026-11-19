@@ -15,14 +15,20 @@ import UIKit
 @MainActor
 final class AssetImageLoader: ObservableObject {
     @Published var image: UIImage?
+    @Published var failed = false
     private var requestID: PHImageRequestID?
 
     func load(_ asset: PHAsset, targetSize: CGSize) {
         guard requestID == nil else { return }
+        failed = false
         requestID = Self.request(asset, targetSize: targetSize) { [weak self] image in
-            guard let image else { return }
             Task { @MainActor [weak self] in
-                self?.image = image
+                guard let self else { return }
+                if let image {
+                    self.image = image
+                } else if self.image == nil {
+                    self.failed = true
+                }
             }
         }
     }
@@ -58,14 +64,20 @@ nonisolated struct PlayerItemBox: @unchecked Sendable {
 @MainActor
 final class VideoLoader: ObservableObject {
     @Published var player: AVQueuePlayer?
+    @Published var failed = false
     private var looper: AVPlayerLooper?
     private var requestID: PHImageRequestID?
 
     func load(_ asset: PHAsset, muted: Bool) {
         guard player == nil, requestID == nil else { return }
+        failed = false
         requestID = Self.request(asset) { [weak self] box in
             Task { @MainActor [weak self] in
-                guard let self, let item = box.item, self.requestID != nil else { return }
+                guard let self, self.requestID != nil else { return }
+                guard let item = box.item else {
+                    self.failed = true
+                    return
+                }
                 let queuePlayer = AVQueuePlayer()
                 queuePlayer.isMuted = muted
                 self.looper = AVPlayerLooper(player: queuePlayer, templateItem: item)
@@ -135,7 +147,7 @@ struct MediaCard: View {
 
     @StateObject private var imageLoader = AssetImageLoader()
     @StateObject private var videoLoader = VideoLoader()
-    @AppStorage("swipe.videoMuted") private var muted = true
+    @AppStorage(SettingsKey.videoMuted) private var muted = true
     @State private var sizeText: String?
     @Environment(\.displayScale) private var scale
 
@@ -159,6 +171,8 @@ struct MediaCard: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: geo.size.width, height: geo.size.height)
+                } else if imageLoader.failed {
+                    unavailable(icon: "icloud.slash", text: loc("media_unavailable"))
                 } else {
                     ProgressView().tint(.white)
                 }
@@ -167,6 +181,19 @@ struct MediaCard: View {
                     PlayerLayerView(player: player)
                         .frame(width: geo.size.width, height: geo.size.height)
                         .allowsHitTesting(false)
+                }
+
+                if isTop, isVideo, videoLoader.failed {
+                    VStack {
+                        Label(loc("video_unavailable"), systemImage: "exclamationmark.icloud")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(.black.opacity(0.55), in: Capsule())
+                            .padding(.top, 16)
+                        Spacer()
+                    }
                 }
 
                 VStack {
@@ -179,12 +206,12 @@ struct MediaCard: View {
                                                            height: geo.size.height * scale))
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .strokeBorder(.white.opacity(0.12), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
+        .shadow(color: .black.opacity(0.35), radius: 24, y: 12)
         .task(id: isTop) {
             guard isTop else {
                 videoLoader.stop()
@@ -206,41 +233,43 @@ struct MediaCard: View {
         }
     }
 
+    private func unavailable(icon: String, text: String) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: icon).font(.system(size: 40))
+            Text(text).font(.footnote).multilineTextAlignment(.center)
+        }
+        .foregroundStyle(.white.opacity(0.7))
+        .padding(32)
+    }
+
     private var infoBar: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             if let date = asset.creationDate {
                 Text(date.formatted(date: .abbreviated, time: .shortened))
                     .font(.footnote.weight(.semibold))
+                    .lineLimit(2)
             }
-            Spacer()
+            Spacer(minLength: 4)
             if let sizeText {
-                Text(sizeText)
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.white.opacity(0.15), in: Capsule())
+                chip(sizeText)
             }
             if isVideo {
-                Label(L10n.duration(asset.duration), systemImage: "play.fill")
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.white.opacity(0.15), in: Capsule())
+                chip(L10n.duration(asset.duration), icon: "play.fill")
                 if isTop {
                     Button {
                         muted.toggle()
                     } label: {
                         Image(systemName: muted ? "speaker.slash.fill" : "speaker.wave.2.fill")
                             .font(.footnote.weight(.semibold))
-                            .frame(width: 32, height: 32)
-                            .background(.white.opacity(0.15), in: Circle())
+                            .frame(width: 34, height: 34)
+                            .glassBackground(in: Circle(), interactive: true)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(muted ? tr("Activer le son", "Unmute") : tr("Couper le son", "Mute"))
+                    .accessibilityLabel(muted ? loc("unmute") : loc("mute"))
                 }
             }
             if asset.isFavorite {
-                Image(systemName: "heart.fill").foregroundStyle(.pink)
+                Image(systemName: "star.fill").foregroundStyle(.yellow)
             }
         }
         .foregroundStyle(.white)
@@ -248,26 +277,42 @@ struct MediaCard: View {
         .background(
             LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .top, endPoint: .bottom)
         )
+        .environment(\.colorScheme, .dark)
+    }
+
+    private func chip(_ text: String, icon: String? = nil) -> some View {
+        HStack(spacing: 4) {
+            if let icon { Image(systemName: icon) }
+            Text(text)
+        }
+        .font(.caption.weight(.semibold))
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .glassBackground(in: Capsule())
     }
 }
 
-// MARK: - Tampons GARDER / SUPPRIMER
+// MARK: - Tampons GARDER / SUPPRIMER / FAVORI
 
 struct StampOverlay: View {
-    let dragX: CGFloat
+    let offset: CGSize
     let threshold: CGFloat
 
     var body: some View {
+        let horizontal = abs(offset.width) >= abs(offset.height)
         VStack {
             HStack {
-                stamp(tr("GARDER", "KEEP"), color: .green, angle: -14)
-                    .opacity(Double(max(0, dragX) / threshold))
+                stamp(loc("stamp_keep"), color: .green, angle: -14)
+                    .opacity(horizontal ? Double(max(0, offset.width) / threshold) : 0)
                 Spacer()
-                stamp(tr("SUPPRIMER", "DELETE"), color: .red, angle: 14)
-                    .opacity(Double(max(0, -dragX) / threshold))
+                stamp(loc("stamp_delete"), color: .red, angle: 14)
+                    .opacity(horizontal ? Double(max(0, -offset.width) / threshold) : 0)
             }
             .padding(24)
             Spacer()
+            stamp(loc("stamp_favorite"), color: .yellow, angle: 0)
+                .opacity(horizontal ? 0 : Double(max(0, -offset.height) / threshold))
+                .padding(.bottom, 90)
         }
         .allowsHitTesting(false)
     }
@@ -284,10 +329,12 @@ struct StampOverlay: View {
     }
 }
 
-// MARK: - Miniature (corbeille)
+// MARK: - Miniature
 
-struct Thumbnail: View {
+struct AssetThumbnail: View {
     let asset: PHAsset
+    var showsRestoreIcon = false
+
     @StateObject private var loader = AssetImageLoader()
 
     var body: some View {
@@ -296,6 +343,8 @@ struct Thumbnail: View {
             .overlay {
                 if let image = loader.image {
                     Image(uiImage: image).resizable().scaledToFill()
+                } else if loader.failed {
+                    Image(systemName: "icloud.slash").foregroundStyle(.white.opacity(0.6))
                 }
             }
             .clipped()
@@ -310,10 +359,12 @@ struct Thumbnail: View {
                 }
             }
             .overlay(alignment: .bottomTrailing) {
-                Image(systemName: "arrow.uturn.backward.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(.white, .black.opacity(0.5))
-                    .padding(6)
+                if showsRestoreIcon {
+                    Image(systemName: "arrow.uturn.backward.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.white, .black.opacity(0.5))
+                        .padding(6)
+                }
             }
             .onAppear { loader.load(asset, targetSize: CGSize(width: 300, height: 300)) }
             .onDisappear { loader.cancel() }

@@ -29,9 +29,10 @@ nonisolated enum LibraryService {
 
     // MARK: Médias à trier
 
-    /// Renvoie les médias à trier, du plus récent au plus ancien.
+    /// Renvoie les médias à trier dans l'ordre demandé.
     /// `excluded` : identifiants à ne pas montrer (corbeille + déjà vus pendant le cycle en cours).
-    static func fetchDeck(source: SortSource, filter: MediaFilter, excluded: Set<String>) -> AssetList {
+    static func fetchDeck(source: SortSource, filter: MediaFilter, order: SortOrder,
+                          excluded: Set<String>) -> AssetList {
         var result: [PHAsset] = []
         var newest: Date?
         func track(_ asset: PHAsset) {
@@ -84,7 +85,27 @@ nonisolated enum LibraryService {
             result.sort { ($0.creationDate ?? .distantPast) > ($1.creationDate ?? .distantPast) }
         }
 
+        switch order {
+        case .newest:
+            break
+        case .oldest:
+            result.reverse()
+        case .largest:
+            let estimates = result.map { estimatedSize($0) }
+            let sortedIndices = estimates.indices.sorted { estimates[$0] > estimates[$1] }
+            result = sortedIndices.map { result[$0] }
+        }
+
         return AssetList(assets: result, newestDate: newest)
+    }
+
+    /// Estimation rapide du poids d'un média (pour le tri « plus lourdes d'abord »).
+    static func estimatedSize(_ asset: PHAsset) -> Double {
+        let pixels = Double(asset.pixelWidth) * Double(asset.pixelHeight)
+        if asset.mediaType == .video {
+            return pixels * max(asset.duration, 1) * 0.8
+        }
+        return pixels * 0.25
     }
 
     /// Nombre de médias ajoutés à la galerie après `date`.
@@ -98,7 +119,7 @@ nonisolated enum LibraryService {
 
     // MARK: Albums et mois
 
-    /// Albums intelligents utiles (favoris, captures d'écran…) + albums créés par l'utilisateur.
+    /// Albums automatiques utiles (favoris, captures d'écran…) + albums créés par l'utilisateur.
     static func fetchAlbums() -> [AlbumInfo] {
         let countOptions = fetchOptions(filter: .all)
         var smart: [AlbumInfo] = []
@@ -161,7 +182,7 @@ nonisolated enum LibraryService {
             .sorted { $0.key > $1.key }
     }
 
-    // MARK: Corbeille
+    // MARK: Corbeille et modifications
 
     /// Retrouve des médias à partir de leurs identifiants (dans le même ordre).
     static func fetchAssets(ids: [String]) -> [PHAsset] {
@@ -172,6 +193,15 @@ nonisolated enum LibraryService {
         let order = Dictionary(ids.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
         assets.sort { (order[$0.localIdentifier] ?? 0) < (order[$1.localIdentifier] ?? 0) }
         return assets
+    }
+
+    /// Parmi ces identifiants, ceux qui existent encore dans la galerie.
+    static func existingIDs(_ ids: [String]) -> Set<String> {
+        guard !ids.isEmpty else { return [] }
+        let fetch = PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+        var found = Set<String>()
+        fetch.enumerateObjects { asset, _, _ in found.insert(asset.localIdentifier) }
+        return found
     }
 
     /// Taille d'un média sur l'iPhone (photo + vidéo Live Photo, etc.).
@@ -193,6 +223,14 @@ nonisolated enum LibraryService {
             sizes[asset.localIdentifier] = fileSize(of: asset)
         }
         return sizes
+    }
+
+    /// Ajoute ou retire un média des Favoris (pas de confirmation iOS pour ça).
+    static func setFavorite(id: String, _ isFavorite: Bool) async throws {
+        try await PHPhotoLibrary.shared().performChanges {
+            guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil).firstObject else { return }
+            PHAssetChangeRequest(for: asset).isFavorite = isFavorite
+        }
     }
 
     /// Supprime les médias en UNE seule fois → une seule pop-up de confirmation iOS.

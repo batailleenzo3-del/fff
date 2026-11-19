@@ -6,7 +6,6 @@
 import SwiftUI
 import Combine
 import Photos
-import UIKit
 
 struct SourcePickerView: View {
     @ObservedObject var store: SwipeStore
@@ -28,17 +27,17 @@ struct SourcePickerView: View {
                         store.select(source: .recent)
                         dismiss()
                     } label: {
-                        row(icon: "clock.fill",
-                            title: tr("Toute la galerie", "Whole library"),
-                            detail: tr("Les plus récentes d'abord", "Newest first"),
+                        row(icon: "photo.on.rectangle",
+                            title: loc("whole_library"),
+                            detail: "",
                             selected: store.source == .recent)
                     }
                 }
 
                 Section {
                     Picker("", selection: $tab) {
-                        Text(tr("Albums", "Albums")).tag(Tab.albums)
-                        Text(tr("Par mois", "By month")).tag(Tab.months)
+                        Text(loc("albums")).tag(Tab.albums)
+                        Text(loc("by_month")).tag(Tab.months)
                     }
                     .pickerStyle(.segmented)
                     .listRowBackground(Color.clear)
@@ -59,11 +58,11 @@ struct SourcePickerView: View {
                     monthSection
                 }
             }
-            .navigationTitle(tr("Que veux-tu trier ?", "What to sort?"))
+            .navigationTitle(loc("what_to_sort"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(tr("Fermer", "Close")) { dismiss() }
+                    Button(loc("close")) { dismiss() }
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -72,22 +71,22 @@ struct SourcePickerView: View {
                         applyAlbumSelection()
                     } label: {
                         Text(selectedAlbumIDs.count == 1
-                             ? tr("Trier cet album", "Sort this album")
-                             : tr("Trier ces \(selectedAlbumIDs.count) albums", "Sort these \(selectedAlbumIDs.count) albums"))
+                             ? loc("sort_this_album")
+                             : loc("sort_these_albums", selectedAlbumIDs.count))
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
-                            .background(.linearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing),
-                                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .background(LinearGradient.brand,
+                                        in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                             .foregroundStyle(.white)
                     }
+                    .buttonStyle(.plain)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 8)
                 }
             }
             .task { await loadLists() }
         }
-        .preferredColorScheme(.dark)
     }
 
     // MARK: Sections
@@ -98,25 +97,25 @@ struct SourcePickerView: View {
         let user = albums.filter { !$0.isSmart }
 
         if !user.isEmpty {
-            Section(tr("Mes albums", "My albums")) {
+            Section(loc("my_albums")) {
                 ForEach(user) { album in albumRow(album) }
             }
         }
         if !smart.isEmpty {
-            Section(tr("Albums automatiques", "Smart albums")) {
+            Section(loc("smart_albums")) {
                 ForEach(smart) { album in albumRow(album) }
             }
         }
         if albums.isEmpty {
             Section {
-                Text(tr("Aucun album trouvé.", "No albums found."))
+                Text(loc("no_albums"))
                     .foregroundStyle(.secondary)
             }
         }
     }
 
     private var monthSection: some View {
-        Section(tr("Par mois", "By month")) {
+        Section(loc("by_month")) {
             ForEach(months) { month in
                 Button {
                     store.select(source: .month(month.key))
@@ -177,9 +176,7 @@ struct SourcePickerView: View {
     private func applyAlbumSelection() {
         let chosen = albums.filter { selectedAlbumIDs.contains($0.id) }
         guard !chosen.isEmpty else { return }
-        let title = chosen.count == 1
-            ? chosen[0].title
-            : tr("\(chosen.count) albums", "\(chosen.count) albums")
+        let title = chosen.count == 1 ? chosen[0].title : loc("n_albums", chosen.count)
         store.select(source: .albums(ids: chosen.map(\.id), title: title))
         dismiss()
     }

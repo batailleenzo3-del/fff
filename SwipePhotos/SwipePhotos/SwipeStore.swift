@@ -1,20 +1,23 @@
 //
 //  SwipeStore.swift
-//  Le "cerveau" de l'app : la pile de médias, la corbeille, l'annulation, les stats.
+//  Le "cerveau" de l'app : la pile de médias, la corbeille, l'annulation,
+//  les doublons, les statistiques.
 //
 
 import SwiftUI
 import Combine
 import Photos
+import PhotosUI
+import UIKit
 
 @MainActor
 final class SwipeStore: ObservableObject {
 
-    // MARK: État
+    // MARK: État affiché
 
     @Published var authorization: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
 
-    /// Médias à trier (du plus récent au plus ancien).
+    /// Médias à trier.
     @Published private(set) var deck: [PHAsset] = []
     /// Position actuelle dans la pile.
     @Published private(set) var index = 0
@@ -29,39 +32,63 @@ final class SwipeStore: ObservableObject {
     @Published private(set) var isLoading = false
     @Published private(set) var hasLoaded = false
 
-    /// Stats de la session en cours.
-    @Published private(set) var keptCount = 0
-    /// Stats depuis l'installation.
-    @Published private(set) var totalFreedBytes: Int64 = 0
-    @Published private(set) var totalDeletedCount = 0
-
     /// Nouvelles photos arrivées dans la galerie depuis le dernier chargement.
     @Published private(set) var newItemsCount = 0
 
-    /// Médias déjà swipés pendant le cycle en cours (24 h) : ils ne sont pas reproposés.
+    /// Doublons / photos similaires (nil = pas encore analysé).
+    @Published private(set) var similarGroups: [SimilarGroup]?
+    /// Progression de l'analyse des doublons (nil = pas d'analyse en cours).
+    @Published private(set) var similarProgress: Double?
+
+    /// Déclencheurs d'effets (confettis, vibrations).
+    @Published private(set) var celebrateTrigger = 0
+    @Published private(set) var decisionCount = 0
+    @Published private(set) var lastDecision: SwipeDecision?
+
+    // MARK: Statistiques
+
+    @Published private(set) var keptCount = 0
+    @Published private(set) var totalFreedBytes: Int64 = 0
+    @Published private(set) var totalDeletedCount = 0
+    @Published private(set) var totalSwiped = 0
+    @Published private(set) var totalKept = 0
+    @Published private(set) var totalFavorited = 0
+
+    // MARK: Interne
+
+    /// Médias déjà swipés pendant le cycle en cours : ils ne sont pas reproposés.
     private var reviewed: Set<String> = []
     private var newestDate: Date?
     private var saveTask: Task<Void, Never>?
-
-    /// Toutes les 24 h, l'app repart automatiquement des photos les plus récentes.
-    static let cycleDuration: TimeInterval = 24 * 60 * 60
-
-    private let reviewedKey = "swipe.reviewedIDs"
-    private let cycleStartKey = "swipe.cycleStart"
-    private let sourceKey = "swipe.source"
-    private let trashKey = "swipe.trashIDs"
-    private let filterKey = "swipe.mediaFilter"
-    private let freedKey = "swipe.totalFreedBytes"
-    private let deletedKey = "swipe.totalDeletedCount"
+    private var changeTask: Task<Void, Never>?
+    private var similarTask: Task<Void, Never>?
+    private var observer: LibraryObserver?
+    private var reloadAfterLimitedPicker = false
     private var loadGeneration = 0
+
+    private enum Key {
+        static let reviewed = "swipe.reviewedIDs"
+        static let cycleStart = "swipe.cycleStart"
+        static let source = "swipe.source"
+        static let trash = "swipe.trashIDs"
+        static let filter = "swipe.mediaFilter"
+        static let freed = "swipe.totalFreedBytes"
+        static let deleted = "swipe.totalDeletedCount"
+        static let swiped = "stats.totalSwiped"
+        static let kept = "stats.totalKept"
+        static let favorited = "stats.totalFavorited"
+    }
 
     init() {
         let defaults = UserDefaults.standard
-        totalFreedBytes = Int64(defaults.integer(forKey: freedKey))
-        totalDeletedCount = defaults.integer(forKey: deletedKey)
-        filter = MediaFilter(rawValue: defaults.string(forKey: filterKey) ?? "") ?? .all
-        reviewed = Set(defaults.stringArray(forKey: reviewedKey) ?? [])
-        if let data = defaults.data(forKey: sourceKey),
+        totalFreedBytes = Int64(defaults.integer(forKey: Key.freed))
+        totalDeletedCount = defaults.integer(forKey: Key.deleted)
+        totalSwiped = defaults.integer(forKey: Key.swiped)
+        totalKept = defaults.integer(forKey: Key.kept)
+        totalFavorited = defaults.integer(forKey: Key.favorited)
+        filter = MediaFilter(rawValue: defaults.string(forKey: Key.filter) ?? "") ?? .all
+        reviewed = Set(defaults.stringArray(forKey: Key.reviewed) ?? [])
+        if let data = defaults.data(forKey: Key.source),
            let saved = try? JSONDecoder().decode(SortSource.self, from: data) {
             source = saved
         }
@@ -75,33 +102,37 @@ final class SwipeStore: ObservableObject {
     var remaining: Int { max(deck.count - index, 0) }
     var canUndo: Bool { !history.isEmpty }
     var trashBytes: Int64 { trash.reduce(0) { $0 + (trashSizes[$1.localIdentifier] ?? 0) } }
+    var reviewedCount: Int { reviewed.count }
+    var freeDeletionsLeft: Int { max(AppConfig.freeDeletionLimit - totalDeletedCount, 0) }
 
     var sourceTitle: String {
         switch source {
-        case .recent: return tr("Récentes", "Recents")
+        case .recent: return loc("source_recent")
         case .albums(_, let title): return title
         case .month(let key): return key.title
         }
     }
 
-    // MARK: Démarrage
+    // MARK: Démarrage et cycle
 
     func requestAccess() async {
         authorization = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
         if isAuthorized { start() }
     }
 
-    /// Vrai si le dernier "retour au début" date de plus de 24 h.
+    /// Vrai si le dernier "retour au début" est plus ancien que la durée choisie dans les Réglages.
     private var cycleExpired: Bool {
-        let start = UserDefaults.standard.double(forKey: cycleStartKey)
-        return start == 0 || Date().timeIntervalSince1970 - start > Self.cycleDuration
+        let start = UserDefaults.standard.double(forKey: Key.cycleStart)
+        if start == 0 { return true }
+        guard let duration = CycleOption.current.seconds else { return false }
+        return Date().timeIntervalSince1970 - start > duration
     }
 
-    /// Appelé à l'ouverture de l'app.
-    /// - Moins de 24 h depuis le dernier cycle : on reprend là où on s'était arrêté
-    ///   (les nouvelles photos éventuelles passent en premier).
-    /// - Plus de 24 h : on repart des photos les plus récentes, y compris celles déjà gardées.
+    /// Appelé à l'ouverture de l'app : on reprend là où on s'était arrêté,
+    /// sauf si le cycle est terminé (retour aux photos les plus récentes).
     func start() {
+        authorization = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        startObservingLibrary()
         loadTrash()
         if cycleExpired {
             beginNewCycle()
@@ -111,8 +142,9 @@ final class SwipeStore: ObservableObject {
         reload()
     }
 
-    /// Quand l'app revient au premier plan : pas de rechargement, sauf si 24 h sont passées.
+    /// Quand l'app revient au premier plan : pas de rechargement, sauf si le cycle est terminé.
     func becameActive() {
+        authorization = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard isAuthorized, hasLoaded else { return }
         if cycleExpired {
             start()
@@ -132,25 +164,25 @@ final class SwipeStore: ObservableObject {
 
     private func beginNewCycle() {
         reviewed.removeAll()
-        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: cycleStartKey)
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: Key.cycleStart)
         persistNow()
     }
 
-    /// Recharge la pile : tout ce qui n'a pas encore été swipé pendant ce cycle,
-    /// du plus récent au plus ancien.
+    /// Recharge la pile : tout ce qui n'a pas encore été swipé pendant ce cycle.
     func reload() {
         loadGeneration += 1
         let generation = loadGeneration
         isLoading = true
 
-        let savedTrash = UserDefaults.standard.stringArray(forKey: trashKey) ?? []
+        let savedTrash = UserDefaults.standard.stringArray(forKey: Key.trash) ?? []
         let excluded = Set(savedTrash).union(trash.map(\.localIdentifier)).union(reviewed)
         let currentSource = source
         let currentFilter = filter
+        let order = SortOrder.current
 
         Task {
             let list = await Task.detached(priority: .userInitiated) {
-                LibraryService.fetchDeck(source: currentSource, filter: currentFilter, excluded: excluded)
+                LibraryService.fetchDeck(source: currentSource, filter: currentFilter, order: order, excluded: excluded)
             }.value
             guard generation == loadGeneration else { return }
             deck = list.assets
@@ -162,6 +194,19 @@ final class SwipeStore: ObservableObject {
             isLoading = false
             hasLoaded = true
         }
+    }
+
+    func select(source newSource: SortSource) {
+        source = newSource
+        saveSource()
+        reload()
+    }
+
+    func select(filter newFilter: MediaFilter) {
+        guard newFilter != filter else { return }
+        filter = newFilter
+        UserDefaults.standard.set(newFilter.rawValue, forKey: Key.filter)
+        reload()
     }
 
     /// Compte les photos prises depuis le dernier chargement (sans toucher à la pile).
@@ -176,17 +221,19 @@ final class SwipeStore: ObservableObject {
         }
     }
 
-    func select(source newSource: SortSource) {
-        source = newSource
-        saveSource()
-        reload()
-    }
+    // MARK: Accès limité aux photos
 
-    func select(filter newFilter: MediaFilter) {
-        guard newFilter != filter else { return }
-        filter = newFilter
-        UserDefaults.standard.set(newFilter.rawValue, forKey: filterKey)
-        reload()
+    /// Ouvre l'écran iOS pour choisir les photos accessibles (mode « accès limité »).
+    func presentLimitedPicker() {
+        guard let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }),
+              var controller = scene.keyWindow?.rootViewController else { return }
+        while let presented = controller.presentedViewController {
+            controller = presented
+        }
+        reloadAfterLimitedPicker = true
+        PHPhotoLibrary.shared().presentLimitedLibraryPicker(from: controller)
     }
 
     // MARK: Swipe
@@ -196,6 +243,8 @@ final class SwipeStore: ObservableObject {
         history.append(HistoryEntry(asset: asset, decision: decision))
         reviewed.insert(asset.localIdentifier)
         scheduleSave()
+        totalSwiped += 1
+
         switch decision {
         case .trash:
             trash.append(asset)
@@ -203,27 +252,65 @@ final class SwipeStore: ObservableObject {
             saveTrash()
         case .keep:
             keptCount += 1
+            totalKept += 1
+        case .favorite:
+            keptCount += 1
+            totalKept += 1
+            totalFavorited += 1
+            let id = asset.localIdentifier
+            Task { try? await LibraryService.setFavorite(id: id, true) }
         }
+        saveStats()
+
         index += 1
+        lastDecision = decision
+        decisionCount += 1
+        if index == deck.count && !deck.isEmpty {
+            celebrateTrigger += 1
+        }
     }
 
     func undo() {
         guard let last = history.popLast() else { return }
-        reviewed.remove(last.asset.localIdentifier)
+        let id = last.asset.localIdentifier
+        reviewed.remove(id)
         scheduleSave()
+        totalSwiped = max(totalSwiped - 1, 0)
+
         switch last.decision {
         case .trash:
-            let id = last.asset.localIdentifier
             trash.removeAll { $0.localIdentifier == id }
             trashSizes[id] = nil
             saveTrash()
         case .keep:
             keptCount = max(keptCount - 1, 0)
+            totalKept = max(totalKept - 1, 0)
+        case .favorite:
+            keptCount = max(keptCount - 1, 0)
+            totalKept = max(totalKept - 1, 0)
+            totalFavorited = max(totalFavorited - 1, 0)
+            let wasFavorite = last.asset.isFavorite
+            Task { try? await LibraryService.setFavorite(id: id, wasFavorite) }
         }
+        saveStats()
         index = max(index - 1, 0)
     }
 
     // MARK: Corbeille
+
+    /// Ajoute des médias à la corbeille (utilisé par l'écran Doublons).
+    func addToTrash(_ assets: [PHAsset]) {
+        let existing = Set(trash.map(\.localIdentifier))
+        let newOnes = assets.filter { !existing.contains($0.localIdentifier) }
+        guard !newOnes.isEmpty else { return }
+        trash.append(contentsOf: newOnes)
+        for asset in newOnes {
+            trashSizes[asset.localIdentifier] = LibraryService.fileSize(of: asset)
+        }
+        // On les retire aussi de la pile à venir
+        removeUpcoming(Set(newOnes.map(\.localIdentifier)))
+        saveTrash()
+    }
 
     /// Sort un média de la corbeille (il est gardé).
     func restore(_ asset: PHAsset) {
@@ -237,6 +324,11 @@ final class SwipeStore: ObservableObject {
         trash.removeAll()
         trashSizes.removeAll()
         saveTrash()
+    }
+
+    /// Faut-il la version Pro pour vider la corbeille actuelle ?
+    func needsPro(isPro: Bool) -> Bool {
+        !isPro && trash.count > freeDeletionsLeft
     }
 
     /// Supprime toute la corbeille d'un coup (une seule confirmation iOS).
@@ -254,16 +346,156 @@ final class SwipeStore: ObservableObject {
         trashSizes.removeAll()
         history.removeAll() // impossible d'annuler une suppression
         saveTrash()
+        removeFromSimilarGroups(Set(ids))
 
         totalFreedBytes += bytes
         totalDeletedCount += ids.count
-        UserDefaults.standard.set(Int(totalFreedBytes), forKey: freedKey)
-        UserDefaults.standard.set(totalDeletedCount, forKey: deletedKey)
+        saveStats()
+        celebrateTrigger += 1
         return (ids.count, bytes)
     }
 
+    // MARK: Doublons et photos similaires
+
+    func scanSimilar(force: Bool = false) {
+        if !force && (similarGroups != nil || similarProgress != nil) { return }
+        similarTask?.cancel()
+        similarGroups = nil
+        similarProgress = 0
+
+        let excluded = Set(trash.map(\.localIdentifier))
+        let progressHandler: @Sendable (Double) -> Void = { [weak self] value in
+            Task { @MainActor [weak self] in
+                guard let self, self.similarProgress != nil else { return }
+                self.similarProgress = value
+            }
+        }
+        similarTask = Task {
+            let worker = Task.detached(priority: .userInitiated) {
+                SimilarityService.findGroups(excluded: excluded, progress: progressHandler)
+            }
+            let groups = await withTaskCancellationHandler {
+                await worker.value
+            } onCancel: {
+                worker.cancel()
+            }
+            guard !Task.isCancelled else { return }
+            similarGroups = groups
+            similarProgress = nil
+        }
+    }
+
+    /// Met à la corbeille les photos choisies d'un groupe, et retire le groupe de la liste.
+    func resolveGroup(_ group: SimilarGroup, trashIDs: Set<String>) {
+        addToTrash(group.assets.filter { trashIDs.contains($0.localIdentifier) })
+        dismissGroup(group)
+    }
+
+    /// "Tout garder" : on retire simplement le groupe de la liste.
+    func dismissGroup(_ group: SimilarGroup) {
+        similarGroups?.removeAll { $0.id == group.id }
+    }
+
+    private func removeFromSimilarGroups(_ deleted: Set<String>) {
+        guard let groups = similarGroups else { return }
+        var updated: [SimilarGroup] = []
+        for group in groups {
+            let left = group.assets.filter { !deleted.contains($0.localIdentifier) }
+            guard left.count > 1 else { continue }
+            let bestStillThere = left.contains { $0.localIdentifier == group.bestID }
+            updated.append(SimilarGroup(id: group.id, assets: left,
+                                        bestID: bestStillThere ? group.bestID : left[0].localIdentifier))
+        }
+        similarGroups = updated
+    }
+
+    // MARK: Changements dans la galerie
+
+    private func startObservingLibrary() {
+        guard observer == nil, isAuthorized else { return }
+        observer = LibraryObserver { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.libraryChanged()
+            }
+        }
+    }
+
+    /// Une photo a été ajoutée ou supprimée ailleurs (app Photos, iCloud…) : on met à jour.
+    private func libraryChanged() {
+        changeTask?.cancel()
+        changeTask = Task {
+            try? await Task.sleep(for: .milliseconds(700))
+            guard !Task.isCancelled else { return }
+            authorization = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+
+            if reloadAfterLimitedPicker {
+                reloadAfterLimitedPicker = false
+                reload()
+                return
+            }
+
+            let upcomingIDs: [String] = index < deck.count
+                ? deck[index..<min(index + 40, deck.count)].map(\.localIdentifier)
+                : []
+            let ids = trash.map(\.localIdentifier) + upcomingIDs
+            if !ids.isEmpty {
+                let existing = await Task.detached(priority: .utility) {
+                    LibraryService.existingIDs(ids)
+                }.value
+                let missing = Set(ids).subtracting(existing)
+                if !missing.isEmpty {
+                    trash.removeAll { missing.contains($0.localIdentifier) }
+                    for id in missing { trashSizes[id] = nil }
+                    removeUpcoming(missing)
+                    removeFromSimilarGroups(missing)
+                    saveTrash()
+                }
+            }
+            checkForNewItems()
+        }
+    }
+
+    private func removeUpcoming(_ ids: Set<String>) {
+        guard index < deck.count else { return }
+        let kept = deck[index...].filter { !ids.contains($0.localIdentifier) }
+        deck = Array(deck[..<index]) + kept
+    }
+
+    // MARK: Sauvegarde
+
+    /// Enregistre la progression (appelé aussi quand l'app passe en arrière-plan).
+    func persistNow() {
+        saveTask?.cancel()
+        UserDefaults.standard.set(Array(reviewed), forKey: Key.reviewed)
+    }
+
+    /// Enregistre la progression 1 s après le dernier swipe (évite d'écrire à chaque geste).
+    private func scheduleSave() {
+        saveTask?.cancel()
+        saveTask = Task {
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            UserDefaults.standard.set(Array(reviewed), forKey: Key.reviewed)
+        }
+    }
+
+    private func saveSource() {
+        if let data = try? JSONEncoder().encode(source) {
+            UserDefaults.standard.set(data, forKey: Key.source)
+        }
+    }
+
+    private func saveStats() {
+        let defaults = UserDefaults.standard
+        defaults.set(Int(totalFreedBytes), forKey: Key.freed)
+        defaults.set(totalDeletedCount, forKey: Key.deleted)
+        defaults.set(totalSwiped, forKey: Key.swiped)
+        defaults.set(totalKept, forKey: Key.kept)
+        defaults.set(totalFavorited, forKey: Key.favorited)
+    }
+
     private func loadTrash() {
-        let ids = UserDefaults.standard.stringArray(forKey: trashKey) ?? []
+        let ids = UserDefaults.standard.stringArray(forKey: Key.trash) ?? []
         guard !ids.isEmpty else { return }
         Task {
             let snapshot = await Task.detached(priority: .utility) {
@@ -279,29 +511,7 @@ final class SwipeStore: ObservableObject {
         }
     }
 
-    /// Enregistre la progression (appelé aussi quand l'app passe en arrière-plan).
-    func persistNow() {
-        saveTask?.cancel()
-        UserDefaults.standard.set(Array(reviewed), forKey: reviewedKey)
-    }
-
-    /// Enregistre la progression 1 s après le dernier swipe (évite d'écrire à chaque geste).
-    private func scheduleSave() {
-        saveTask?.cancel()
-        saveTask = Task {
-            try? await Task.sleep(for: .seconds(1))
-            guard !Task.isCancelled else { return }
-            UserDefaults.standard.set(Array(reviewed), forKey: reviewedKey)
-        }
-    }
-
-    private func saveSource() {
-        if let data = try? JSONEncoder().encode(source) {
-            UserDefaults.standard.set(data, forKey: sourceKey)
-        }
-    }
-
     private func saveTrash() {
-        UserDefaults.standard.set(trash.map(\.localIdentifier), forKey: trashKey)
+        UserDefaults.standard.set(trash.map(\.localIdentifier), forKey: Key.trash)
     }
 }

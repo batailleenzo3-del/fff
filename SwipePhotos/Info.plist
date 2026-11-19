@@ -8,6 +8,9 @@
 	<array>
 		<string>fr</string>
 		<string>en</string>
+		<string>es</string>
+		<string>de</string>
+		<string>it</string>
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>

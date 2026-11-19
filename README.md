@@ -1,6 +1,6 @@
 # Swipe Photos 📸
 
-App iPhone (SwiftUI + PhotoKit) pour trier sa galerie en swipant : droite = garder, gauche = corbeille.
+App iPhone et iPad (SwiftUI + PhotoKit) pour trier sa galerie en swipant : droite = garder, gauche = corbeille, haut = favori. Doublons, vidéos, albums, 5 langues, Liquid Glass, achat Pro.
 
 👉 **Tout est dans le dossier [`SwipePhotos/`](SwipePhotos/)** : projet Xcode prêt à ouvrir, icône, textes App Store.
 👉 **Le guide complet : [`SwipePhotos/README.md`](SwipePhotos/README.md)**

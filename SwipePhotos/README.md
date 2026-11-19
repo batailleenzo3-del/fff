@@ -1,6 +1,6 @@
-# 📸 Swipe Photos — le guide complet
+# 📸 Swipe Photos — le guide complet (version 2.0 « grand public »)
 
-Ce dossier contient **tout** : le projet Xcode prêt à ouvrir, l'icône, les textes App Store et la politique de confidentialité.
+Ce dossier contient **tout** : le projet Xcode prêt à ouvrir, l'icône, l'achat intégré, les textes App Store en 5 langues, un studio de captures d'écran et la politique de confidentialité.
 Lis ce guide dans l'ordre. Chaque étape est expliquée clic par clic.
 
 ---
@@ -10,35 +10,47 @@ Lis ce guide dans l'ordre. Chaque étape est expliquée clic par clic.
 1. [Ce que fait l'app](#1-ce-que-fait-lapp)
 2. [Contenu du dossier](#2-contenu-du-dossier)
 3. [Installer l'app sur ton iPhone](#3-installer-lapp-sur-ton-iphone)
-4. [Mettre à jour le code plus tard](#4-mettre-à-jour-le-code-plus-tard)
-5. [Si le projet ne s'ouvre pas (plan B)](#5-si-le-projet-ne-souvre-pas-plan-b)
-6. [Publier sur l'App Store à 2,99 €](#6-publier-sur-lapp-store-à-299-)
+4. [Tester l'achat Pro sans payer](#4-tester-lachat-pro-sans-payer)
+5. [Mettre à jour le code plus tard](#5-mettre-à-jour-le-code-plus-tard)
+6. [Publier sur l'App Store](#6-publier-sur-lapp-store)
 7. [Dépannage](#7-dépannage)
 
 ---
 
 ## 1. Ce que fait l'app
 
-| Fonction | Comment |
+### Trier
+| Geste / bouton | Effet |
 |---|---|
-| **Garder** | Swipe à droite (ou bouton ♥) |
-| **Jeter** | Swipe à gauche (ou bouton ✕). La photo va dans une corbeille : **rien n'est supprimé tout de suite** |
-| **Annuler** | Bouton jaune ↩︎ : la dernière carte revient |
-| **Reprise** | Quand tu fermes et rouvres l'app, tu **reprends exactement à la dernière photo swipée** (rien n'est rechargé pendant une session) |
-| **Bouton ↻** (en haut) | Un appui = retour immédiat aux **photos les plus récentes** de la galerie. Un point rose apparaît dessus quand de nouvelles photos sont arrivées |
-| **Toutes les 24 h** | L'app repart automatiquement des photos les plus récentes de toute la galerie |
-| **Choisir quoi trier** | Touche le **titre en haut à gauche** (« Récentes ⌄ ») : toute la galerie, **un ou plusieurs albums** (coche-les), ou **un mois précis** |
-| **Photos / Vidéos** | Le sélecteur « Tout · Photos · Vidéos » sous le titre |
-| **Vidéos** | Elles se lisent dans la carte, en boucle, sans le son. Bouton 🔈 pour activer le son |
-| **Taille** | Chaque carte affiche son poids (ex : « 4,2 Mo ») |
-| **Corbeille** | Bouton rouge en haut à droite : touche une photo pour la récupérer, « Tout garder » pour tout annuler |
-| **Tout supprimer** | Dans la corbeille : **une seule** confirmation iOS pour tout effacer |
-| **Espace libéré** | Affiché après chaque suppression et en haut de l'écran (total depuis le début) |
-| **Langues** | Français et anglais, automatiquement selon la langue de l'iPhone |
+| Swipe **à droite** / ♥ | Garder |
+| Swipe **à gauche** / ✕ | Corbeille (rien n'est supprimé tout de suite) |
+| Swipe **vers le haut** / ★ | Garder **et** mettre en Favori dans l'app Photos |
+| ↩︎ | Annuler le dernier swipe |
+| **Titre en haut à gauche** | Choisir : toute la galerie, un ou plusieurs albums, ou un mois |
+| Onglets **Tout · Photos · Vidéos · Doublons** | Filtrer, ou trouver les photos similaires |
+| **↻** | Revenir immédiatement aux photos les plus récentes (point rose = nouvelles photos) |
+| **⚙︎** | Réglages + statistiques |
+| **🗑 N** | Corbeille : récupérer des photos ou tout supprimer en **une seule** confirmation |
 
-> 💡 La corbeille de l'app est **conservée** même si tu fermes l'app : les photos mises de côté ne réapparaissent pas dans la pile tant que tu ne les as pas récupérées ou supprimées.
->
-> 💡 Pour changer la durée du cycle (24 h), modifie `cycleDuration` dans `SwipeStore.swift` (ex : `48 * 60 * 60` pour 48 h).
+### Nouveautés de la version 2.0
+- **Doublons** : l'onglet « Doublons » regroupe les rafales et photos quasi identiques (intelligence artificielle d'Apple, sur l'iPhone). La meilleure est gardée automatiquement, les autres sont cochées pour la corbeille.
+- **Plus lourdes d'abord** (Réglages → Ordre) : les grosses vidéos en premier pour libérer de l'espace vite.
+- **Tutoriel** au premier lancement (4 pages).
+- **Réglages** : ordre de tri, fréquence du retour aux plus récentes (24 h, 48 h, semaine, jamais), thème clair/sombre/auto, vibrations, son des vidéos, revoir le tutoriel, noter l'app, contact, confidentialité.
+- **Statistiques** : Go libérés, photos swipées, gardées, favoris, supprimées.
+- **Accès limité** : si seules quelques photos sont autorisées, un bandeau permet d'en ajouter.
+- **Mise à jour automatique** : une photo supprimée depuis l'app Photos disparaît aussi de Swipe Photos.
+- **Messages d'erreur** clairs si une photo/vidéo iCloud est indisponible.
+- **Liquid Glass** (iOS 26) sur les boutons et panneaux, **confettis** quand tout est trié ou après une suppression, vibrations plus riches.
+- **5 langues** : français, anglais, espagnol, allemand, italien (selon la langue de l'iPhone).
+- **iPad** : l'app fonctionne aussi sur iPad, en portrait et paysage.
+- **Freemium** : gratuite jusqu'à 100 suppressions, puis achat unique **Swipe Photos Pro à 2,99 €** (suppressions illimitées).
+- **Demande de note** App Store, une seule fois, après une belle suppression.
+
+> 💡 Tu reprends toujours là où tu t'étais arrêté. L'app revient aux photos les plus récentes selon la fréquence choisie dans les Réglages (24 h par défaut) ou quand tu touches ↻.
+
+### Ce qui n'est pas inclus (et pourquoi)
+- **Widget d'écran d'accueil** : il nécessite le partage de données entre l'app et le widget (« App Groups »), qui **ne fonctionne pas avec un Apple ID gratuit**. Il pourra être ajouté une fois ton compte développeur payant actif.
 
 ---
 
@@ -46,147 +58,116 @@ Lis ce guide dans l'ordre. Chaque étape est expliquée clic par clic.
 
 ```
 SwipePhotos/
-├── README.md                     ← ce guide
-├── SwipePhotos.xcodeproj         ← DOUBLE-CLIQUE ICI pour ouvrir le projet
-├── Info.plist                    ← permissions (accès aux photos) — déjà rempli
-├── SwipePhotos/                  ← le code de l'app
-│   ├── SwipePhotosApp.swift      ← point de départ
-│   ├── ContentView.swift         ← écran principal (pile de cartes, swipe)
-│   ├── SourcePickerView.swift    ← choix albums / mois
-│   ├── TrashView.swift           ← la corbeille
-│   ├── MediaViews.swift          ← cartes photo/vidéo, miniatures
-│   ├── SwipeStore.swift          ← la logique (pile, corbeille, annuler, stats)
-│   ├── LibraryService.swift      ← lecture et suppression dans la galerie
-│   ├── Models.swift              ← types de données
-│   ├── Localization.swift        ← textes français / anglais
-│   ├── Assets.xcassets           ← icône de l'app + couleur
-│   ├── fr.lproj / en.lproj       ← texte de la demande d'accès aux photos
+├── README.md                       ← ce guide
+├── SwipePhotos.xcodeproj           ← DOUBLE-CLIQUE ICI pour ouvrir le projet
+├── Info.plist                      ← permissions (déjà rempli)
+├── SwipePhotos.storekit            ← achat Pro de test (pour essayer sans payer)
+├── SwipePhotos/                    ← le code de l'app
+│   ├── AppConfig.swift             ← ⚠️ À PERSONNALISER avant publication (e-mail, liens…)
+│   ├── SwipePhotosApp.swift        ← point de départ
+│   ├── ContentView.swift           ← tutoriel → autorisation → écran principal
+│   ├── SwipeScreen.swift           ← écran principal (cartes, swipe, boutons)
+│   ├── DuplicatesView.swift        ← onglet Doublons
+│   ├── TrashView.swift             ← corbeille
+│   ├── SourcePickerView.swift      ← choix albums / mois
+│   ├── SettingsView.swift          ← réglages + statistiques
+│   ├── PaywallView.swift           ← écran Swipe Photos Pro
+│   ├── OnboardingView.swift        ← tutoriel
+│   ├── MediaViews.swift            ← cartes photo/vidéo, miniatures
+│   ├── Effects.swift               ← Liquid Glass, fond, confettis
+│   ├── SwipeStore.swift            ← la logique (pile, corbeille, cycle, stats)
+│   ├── LibraryService.swift        ← lecture/suppression dans la galerie
+│   ├── SimilarityService.swift     ← détection des doublons
+│   ├── LibraryObserver.swift       ← suit les changements de la galerie
+│   ├── PurchaseManager.swift       ← achat intégré (StoreKit 2)
+│   ├── Models.swift                ← types de données et réglages
+│   ├── Localization.swift          ← choix de la langue
+│   ├── Strings.swift               ← tous les textes dans les 5 langues
+│   ├── Assets.xcassets             ← icône + couleur
+│   └── fr/en/es/de/it.lproj        ← texte de la demande d'accès aux photos
 └── AppStore/
-    ├── Fiche-App-Store.md        ← description, mots-clés, notes pour Apple (FR + EN)
-    └── politique-de-confidentialite.html ← page à mettre en ligne (obligatoire)
+    ├── Fiche-App-Store.md          ← description, mots-clés (5 langues), achat intégré, notes pour Apple
+    ├── studio-captures.html        ← crée tes captures App Store (s'ouvre dans Safari)
+    └── politique-de-confidentialite.html ← à mettre en ligne (obligatoire)
 ```
-
-Tout est déjà réglé dans le projet : permission Photos, icône, nom « Swipe Photos », catégorie Photo, iPhone uniquement, mode portrait, français + anglais.
 
 ---
 
 ## 3. Installer l'app sur ton iPhone
 
-### Étape 1 — Mettre le dossier au bon endroit
-1. Décompresse le fichier `.zip` (double-clic dessus).
-2. Glisse le dossier **SwipePhotos** dans ton dossier **Documents** (ou sur le Bureau).
-   ⚠️ Pas dans iCloud Drive « Optimiser le stockage » : Xcode n'aime pas les fichiers qui ne sont pas téléchargés.
+1. **Décompresse** le zip et mets le dossier **SwipePhotos** dans **Documents** (remplace l'ancien).
+2. **Double-clique** sur `SwipePhotos.xcodeproj`.
+3. Colonne de gauche → icône bleue **SwipePhotos** → sous **TARGETS** : **SwipePhotos** → onglet **Signing & Capabilities** → **Team** : *Enzo Bataille (Personal Team)*.
+   - Erreur sur le Bundle Identifier ? Mets `com.enzobataille.swipephotos2026`.
+4. Branche l'iPhone, choisis **ton iPhone** en haut (pas un simulateur), clique sur **▶︎**.
 
-### Étape 2 — Ouvrir le projet
-1. Ouvre le dossier **SwipePhotos**.
-2. **Double-clique sur `SwipePhotos.xcodeproj`**. Xcode s'ouvre.
-3. Ferme l'ancien « Untitled Project » s'il est encore ouvert (tu n'en as plus besoin).
-
-### Étape 3 — Choisir ton compte (signature)
-1. Dans la colonne de gauche, clique sur l'icône bleue **SwipePhotos** (tout en haut).
-2. Au milieu, sous **TARGETS**, clique sur **SwipePhotos**.
-3. Onglet **Signing & Capabilities**.
-4. **Team** : choisis **Enzo Bataille (Personal Team)** (ou ton compte développeur payant plus tard).
-5. **Bundle Identifier** : il est déjà réglé sur `com.enzobataille.swipephotos`.
-   Si une erreur rouge dit qu'il n'est pas disponible, ajoute des chiffres : `com.enzobataille.swipephotos2026`.
-
-### Étape 4 — Lancer sur l'iPhone
-1. Branche l'iPhone, déverrouille-le.
-2. En haut d'Xcode, à côté de « SwipePhotos › », choisis **ton iPhone**.
-3. Clique sur **▶︎**.
-4. Sur l'iPhone, l'app **Swipe Photos** apparaît avec la nouvelle icône.
-   L'ancienne app « MyApp » peut être supprimée (appui long → Supprimer l'app).
-
-> Si l'iPhone affiche « Développeur non approuvé » : **Réglages → Général → VPN et gestion de l'appareil** → ton Apple ID → **Faire confiance**.
-
-> ⏳ Avec un Apple ID gratuit, l'app expire après **7 jours** : rebranche l'iPhone et clique sur ▶︎ pour la réactiver. Avec le compte développeur payant (99 €/an), elle dure 1 an.
-
-> 🚀 L'app est plus lente quand elle est lancée depuis Xcode (mode débogage). Pour la tester à pleine vitesse : clique sur ■ dans Xcode, puis ouvre-la directement depuis l'écran d'accueil.
+> L'app commence par le **tutoriel**, puis demande l'accès aux photos. Ta progression, ta corbeille et tes statistiques de la version précédente sont conservées.
 
 ---
 
-## 4. Mettre à jour le code plus tard
+## 4. Tester l'achat Pro sans payer
 
-Quand tu reçois une nouvelle version du code (par exemple un fichier `ContentView.swift` corrigé) :
+**A. Le bouton de test (le plus simple)**
+Dans l'écran Pro (⚙︎ → « Passer à Swipe Photos Pro »), un bouton **🧪 Débloquer Pro (test uniquement)** apparaît. Il n'existe **que** quand l'app est lancée depuis Xcode : il disparaît automatiquement dans la version App Store.
 
-**Méthode simple — remplacer le contenu d'un fichier**
-1. Dans Xcode, colonne de gauche, clique sur le fichier à modifier (ex : **ContentView**).
-2. Clique dans le code, **⌘ A** (tout sélectionner), **Suppr**.
-3. Colle le nouveau code (**⌘ V**), puis **⌘ S** pour enregistrer.
-4. Clique sur **▶︎**.
-
-**Méthode dossier — remplacer des fichiers entiers**
-1. Ferme Xcode.
-2. Dans le Finder, remplace les anciens fichiers du dossier `SwipePhotos/SwipePhotos/` par les nouveaux (même nom).
-3. Rouvre `SwipePhotos.xcodeproj` et clique sur **▶︎**.
-   Les nouveaux fichiers `.swift` ajoutés dans ce dossier sont pris en compte automatiquement.
-
-**Pour publier une mise à jour sur l'App Store**
-1. Onglet **General** → augmente **Version** (ex : `1.0` → `1.1`) et **Build** (ex : `1` → `2`).
-2. Refais l'étape « Envoyer l'app » de la partie 6 (Product → Archive…).
+**B. Simuler un vrai achat avec le fichier StoreKit**
+1. Dans Xcode : menu **Product → Scheme → Edit Scheme…**
+2. À gauche **Run**, onglet **Options**.
+3. **StoreKit Configuration** : choisis **SwipePhotos.storekit** → **Close**.
+4. Relance avec ▶︎ : « Débloquer pour 2,99 € » ouvre une fausse fenêtre d'achat Apple (aucun paiement réel).
 
 ---
 
-## 5. Si le projet ne s'ouvre pas (plan B)
+## 5. Mettre à jour le code plus tard
 
-Si Xcode refuse d'ouvrir `SwipePhotos.xcodeproj` (« damaged » ou erreur), recrée un projet en 5 minutes :
-
-1. Xcode → **File → New → Project…** → **iOS** → **App** → **Next**.
-2. Product Name : `SwipePhotos` · Team : ton compte · Organization Identifier : `com.enzobataille` · Interface : **SwiftUI** · Language : **Swift** → **Next** → enregistre-le **ailleurs** (ex : Bureau).
-3. Dans la colonne de gauche, **supprime** `ContentView.swift` et `SwipePhotosApp.swift` créés par Xcode (clic droit → Delete → Move to Trash).
-4. Depuis le Finder, **glisse tous les fichiers `.swift`** de `SwipePhotos/SwipePhotos/` (ce dossier-ci) dans la colonne de gauche d'Xcode, dans le dossier jaune/bleu `SwipePhotos`. Coche **Copy items if needed** → **Finish**.
-5. Remplace le dossier **Assets** : supprime `Assets` dans Xcode, puis glisse `Assets.xcassets` de ce dossier.
-6. Permission Photos : cible **SwipePhotos** → onglet **Info** → **+** → `Privacy - Photo Library Usage Description` → valeur : `Pour afficher et trier tes photos`.
-7. **▶︎**.
+- **Un fichier** : clique dessus dans Xcode, **⌘ A**, colle le nouveau code (**⌘ V**), **⌘ S**, puis ▶︎.
+- **Tout le dossier** : ferme Xcode, remplace le dossier `SwipePhotos/SwipePhotos/` par le nouveau, rouvre le projet. Les nouveaux fichiers `.swift` sont pris en compte automatiquement.
+- **Modifier un texte de l'app** : ouvre `Strings.swift`, cherche le texte, change-le dans la bonne langue.
+- **Publier une mise à jour** : onglet **General** → augmente **Version** (`1.0` → `1.1`) et **Build** (`1` → `2`), puis refais la partie 6.6.
 
 ---
 
-## 6. Publier sur l'App Store à 2,99 €
+## 6. Publier sur l'App Store
 
-### 6.1 Ce qu'il te faut
-- **Apple Developer Program : 99 €/an** — obligatoire pour publier. Inscription : <https://developer.apple.com/programs/enroll/> → « Individual » (particulier). Validation : quelques heures à 2 jours.
-- **Une page web pour la politique de confidentialité** (obligatoire) : le fichier `AppStore/politique-de-confidentialite.html` est prêt.
-  1. Ouvre-le avec TextEdit et remplace `[TON E-MAIL DE CONTACT]` et `[DATE]`.
-  2. Mets-le en ligne gratuitement, par exemple : copie le texte dans une page **Notion** publique ou un **Google Doc** partagé « Tous les utilisateurs disposant du lien », et garde l'adresse (URL).
-- **Statut fiscal** : les ventes sont des revenus → en France, le plus simple est le statut **micro-entrepreneur** (autoentrepreneur.urssaf.fr).
+### 6.1 Prérequis
+- **Apple Developer Program : 99 €/an** — <https://developer.apple.com/programs/enroll/> → « Individual ».
+- **Statut micro-entrepreneur** recommandé pour déclarer les revenus (autoentrepreneur.urssaf.fr).
 
-### 6.2 Préparer le projet
-1. Projet → cible **SwipePhotos** → **Signing & Capabilities** → **Team** : choisis ton **compte payant** (plus « Personal Team »).
-2. Onglet **General** : vérifie Version `1.0`, Build `1`.
+### 6.2 Personnaliser `AppConfig.swift`
+Ouvre `SwipePhotos/AppConfig.swift` et remplis :
+- `privacyPolicyURL` : l'adresse de ta politique de confidentialité en ligne (voir 6.3).
+- `supportEmail` : une adresse e-mail de contact dédiée (ex : swipephotos.app@gmail.com).
+- `appStoreID` : à remplir **après** la création de l'app dans App Store Connect (« Identifiant Apple », 10 chiffres). Pas obligatoire pour la 1ʳᵉ version.
 
-### 6.3 Créer l'app dans App Store Connect
-1. Va sur <https://appstoreconnect.apple.com> → **Apps** → **+** → **Nouvelle app**.
-2. Plateforme **iOS** · Nom : voir `AppStore/Fiche-App-Store.md` · Langue principale **Français** · Bundle ID : `com.enzobataille.swipephotos` · SKU : `swipephotos001` · Accès : complet.
+### 6.3 Politique de confidentialité (obligatoire)
+1. Ouvre `AppStore/politique-de-confidentialite.html` avec **TextEdit**, remplace `[TON E-MAIL DE CONTACT]` et `[DATE]`.
+2. Mets le texte en ligne (page **Notion** publique ou **Google Doc** « Tous les utilisateurs disposant du lien ») et copie l'adresse dans `AppConfig.swift` et dans App Store Connect.
 
-### 6.4 Fixer le prix à 2,99 €
-1. **Business** (ou « Accords, taxes et banques ») → signe le **Paid Apps Agreement** (contrat apps payantes), puis remplis **coordonnées bancaires (RIB)** et **informations fiscales**. Sans ça, impossible de vendre.
-2. Ton app → **Prix et disponibilité** → pays de référence **France** → prix **2,99 €**. Apple calcule les prix des autres pays.
-3. Inscris-toi au **App Store Small Business Program** (<https://developer.apple.com/app-store/small-business-program/>) : Apple ne prend que **15 %** au lieu de 30 %.
-   → Sur une vente à 2,99 € en France, tu touches environ **2,10 €** (après TVA 20 % et commission 15 %).
+### 6.4 Créer l'app et l'achat intégré
+1. <https://appstoreconnect.apple.com> → **Apps** → **+** → **Nouvelle app** : iOS, nom (voir la fiche), langue Français, Bundle ID `com.enzobataille.swipephotos`, SKU `swipephotos001`.
+2. **Business** (« Accords, taxes et banques ») → signe le **Paid Apps Agreement**, remplis **RIB** et **infos fiscales** (obligatoire même pour une app gratuite avec achat intégré).
+3. **Prix et disponibilité** → **Gratuit**.
+4. **Achats intégrés** → **+** → **Non consommable** → identifiant `com.enzobataille.swipephotos.pro` → prix **2,99 €** (détails dans `AppStore/Fiche-App-Store.md`).
+5. Inscris-toi au **Small Business Program** (<https://developer.apple.com/app-store/small-business-program/>) : Apple ne prend que **15 %** → tu touches ≈ **2,10 €** par achat en France.
 
 ### 6.5 Remplir la fiche
-Tout est prêt dans **`AppStore/Fiche-App-Store.md`** : nom, sous-titre, description, mots-clés (FR + EN), notes pour Apple, réponses confidentialité.
-- **Captures d'écran** : au moins 3 au format iPhone 6,9" (fais-les sur ton iPhone Air).
-- **Confidentialité de l'app** : « Aucune donnée collectée ».
-- **URL de la politique de confidentialité** : celle de l'étape 6.1.
-- **Statut de commerçant (DSA — obligatoire dans l'UE)** : app payante → tu dois te déclarer **commerçant**. ⚠️ Ton adresse, ton téléphone et ton e-mail seront **affichés publiquement** sur la fiche. Utilise une adresse e-mail dédiée et, si possible, une adresse professionnelle (domiciliation).
+- Textes en **5 langues** : copie-colle depuis `AppStore/Fiche-App-Store.md`.
+- **Captures** : ouvre `AppStore/studio-captures.html` dans Safari, importe tes captures, choisis un texte, télécharge. Il faut des captures **iPhone 6,9"** **et** **iPad 13"** (simulateur iPad dans Xcode → ⌘ S pour capturer).
+- **Confidentialité** : « Aucune donnée collectée ». **Âge** : 4+.
+- **DSA (UE)** : déclare-toi **commerçant** (app avec achat intégré). ⚠️ Ton adresse, téléphone et e-mail seront **publics** : utilise une adresse e-mail dédiée et, si possible, une domiciliation.
+- **Notes pour Apple** : copie le bloc de la fiche.
 
-### 6.6 Envoyer l'app à Apple
-1. Dans Xcode, en haut, choisis **Any iOS Device (arm64)** à la place de ton iPhone.
-2. Menu **Product → Archive**. Attends la fin (1 à 3 min).
-3. La fenêtre **Organizer** s'ouvre → **Distribute App** → **App Store Connect** → **Distribute**.
-4. Attends ~15 min que le build apparaisse dans App Store Connect (onglet **TestFlight**).
-5. Dans ta version 1.0 → section **Build** → **+** → choisis le build.
-6. **Ajouter pour vérification** → **Soumettre**.
-7. Apple répond en général en **24 à 48 h** par e-mail.
+### 6.6 Envoyer l'app
+1. **Signing & Capabilities** → **Team** : ton **compte payant**.
+2. En haut d'Xcode : **Any iOS Device (arm64)**.
+3. **Product → Archive** → **Distribute App** → **App Store Connect** → **Distribute**.
+4. Après ~15 min, dans App Store Connect : version 1.0 → **Build** → **+** → choisis-le. Ajoute aussi l'**achat intégré** à la version.
+5. **Ajouter pour vérification** → **Soumettre**. Réponse en 24–48 h en général.
 
-> 💡 Bonus : avant de publier, installe l'app via **TestFlight** sur ton iPhone pour la tester dans les vraies conditions.
+> 💡 Teste d'abord via **TestFlight** (onglet TestFlight d'App Store Connect) : c'est la vraie version, avec de faux achats.
 
 ### 6.7 Si Apple refuse
-Pas de panique, c'est fréquent la première fois. Lis le message dans App Store Connect (**Centre de résolution**), corrige, augmente le **Build** (`2`, `3`…), refais **Archive** et resoumets. Les refus les plus courants :
-- **2.1 – App incomplète / bug** → teste bien sur ton iPhone sans Xcode.
-- **4.3 – Spam / app trop similaire** → mets en avant ce qui rend l'app unique (tri par mois, albums multiples, vidéos, espace libéré).
-- **5.1.1 – Confidentialité** → vérifie l'URL de la politique de confidentialité.
+Lis le message dans le **Centre de résolution**, corrige, augmente le **Build**, refais **Archive**, resoumets. Refus fréquents : 2.1 (bug → teste sans Xcode), 3.1.1 (achat → vérifie que l'achat intégré est ajouté à la version), 5.1.1 (lien de confidentialité manquant).
 
 ---
 
@@ -194,12 +175,13 @@ Pas de panique, c'est fréquent la première fois. Lis le message dans App Store
 
 | Problème | Solution |
 |---|---|
-| `Signing for "SwipePhotos" requires a development team` | Étape 3 : choisis ta **Team** |
+| Erreur rouge à la compilation | Clique sur l'erreur, copie le texte (ou fais une photo) et envoie-le à Claude |
+| `Signing … requires a development team` | Partie 3, étape 3 |
 | `Failed Registering Bundle Identifier` | Change le Bundle Identifier (ajoute des chiffres) |
-| L'app se ferme dès qu'on touche « Autoriser » | La permission Photos manque : vérifie que `Info.plist` contient `NSPhotoLibraryUsageDescription` (déjà fait dans ce projet) |
-| « Copying OS libraries… » très long | Normal la 1ʳᵉ fois avec un iPhone : attends 5–15 min |
-| L'app semble figée | Lance-la sans Xcode (■ puis ouvre-la depuis l'écran d'accueil). Le premier chargement d'une grosse galerie prend quelques secondes |
-| Seulement quelques photos visibles | Tu as choisi « accès limité » : **Réglages → Swipe Photos → Photos → Accès complet** |
-| L'espace ne se libère pas | Les photos supprimées restent 30 jours dans **Photos → Supprimés récemment** : vide cet album |
+| L'app se met en pause avec une ligne verte/rouge dans Xcode | Clique sur **▶︎ Continue** (barre du bas) ou lance l'app depuis l'écran d'accueil |
+| « Débloquer pour 2,99 € » affiche une erreur | Normal en test sans fichier StoreKit : utilise le bouton 🧪 ou la partie 4.B |
+| Doublons : l'analyse est longue | Normal la 1ʳᵉ fois sur une grosse galerie (elle tourne sur l'iPhone). Les photos uniquement sur iCloud sont ignorées |
+| Trop / pas assez de doublons détectés | Change `similarityThreshold` dans `AppConfig.swift` (plus petit = plus strict) |
+| Seulement quelques photos visibles | Accès limité : touche **Gérer** dans le bandeau, ou Réglages iPhone → Swipe Photos → Photos → Accès complet |
+| L'espace ne se libère pas | Vide **Photos → Supprimés récemment** |
 | L'app ne s'ouvre plus après 7 jours | Compte gratuit : rebranche l'iPhone et clique sur ▶︎ |
-| Erreur rouge à la compilation | Fais une capture de l'écran (ou clique sur l'erreur → copie le texte) et envoie-la à Claude |

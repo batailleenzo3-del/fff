@@ -1,29 +1,40 @@
 //
 //  Localization.swift
-//  Textes en français ou en anglais selon la langue de l'iPhone.
+//  Textes dans la langue de l'iPhone (français, anglais, espagnol, allemand, italien).
 //
-//  Usage : tr("Bonjour", "Hello")
+//  Usage dans les écrans : loc("trash_title")  ou  loc("to_sort", 42)
+//  Les traductions sont dans Strings.swift.
 //
 
 import Foundation
 
 nonisolated enum L10n {
-    /// true si l'iPhone est réglé en français.
-    static let isFrench: Bool = {
-        let language = Locale.preferredLanguages.first ?? "en"
-        return language.hasPrefix("fr")
+    static let supportedLanguages = ["fr", "en", "es", "de", "it"]
+
+    /// Langue utilisée par l'app (la première langue de l'iPhone qu'on sait parler, sinon anglais).
+    static let language: String = {
+        for preferred in Locale.preferredLanguages {
+            let code = String(preferred.prefix(2))
+            if supportedLanguages.contains(code) { return code }
+        }
+        return "en"
     }()
 
-    static func tr(_ french: String, _ english: String) -> String {
-        isFrench ? french : english
+    /// Texte traduit. Les {0}, {1}… sont remplacés par les valeurs données.
+    static func t(_ key: String, _ args: CustomStringConvertible...) -> String {
+        var text = Strings.table(for: language)[key] ?? Strings.en[key] ?? key
+        for (index, value) in args.enumerated() {
+            text = text.replacingOccurrences(of: "{\(index)}", with: value.description)
+        }
+        return text
     }
 
-    /// "1,2 Go", "350 Mo"… (format automatique selon la langue)
+    /// "1,2 Go", "350 Mo"…
     static func bytes(_ count: Int64) -> String {
         ByteCountFormatter.string(fromByteCount: count, countStyle: .file)
     }
 
-    /// Titre d'un mois : "Novembre 2026" / "November 2026"
+    /// Titre d'un mois : "Novembre 2026"
     static func monthTitle(year: Int, month: Int) -> String {
         var components = DateComponents()
         components.year = year
@@ -31,12 +42,12 @@ nonisolated enum L10n {
         components.day = 1
         guard let date = Calendar.current.date(from: components) else { return "\(month)/\(year)" }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: isFrench ? "fr_FR" : "en_US")
+        formatter.locale = Locale(identifier: language)
         formatter.setLocalizedDateFormatFromTemplate("MMMM yyyy")
         return formatter.string(from: date).capitalized
     }
 
-    /// Durée d'une vidéo : "0:42", "12:05"
+    /// Durée d'une vidéo : "0:42"
     static func duration(_ seconds: Double) -> String {
         let total = Int(seconds.rounded())
         return String(format: "%d:%02d", total / 60, total % 60)
@@ -44,6 +55,10 @@ nonisolated enum L10n {
 }
 
 /// Raccourci utilisé dans les écrans.
-func tr(_ french: String, _ english: String) -> String {
-    L10n.tr(french, english)
+func loc(_ key: String, _ args: CustomStringConvertible...) -> String {
+    var text = L10n.t(key)
+    for (index, value) in args.enumerated() {
+        text = text.replacingOccurrences(of: "{\(index)}", with: value.description)
+    }
+    return text
 }

@@ -17,17 +17,23 @@ nonisolated enum AppConfig {
     /// Laisse vide pour masquer le bouton « Contacter ».
     static let supportEmail = ""
 
+    /// Adresse qui reçoit les idées et signalements de bugs (onglet « Idées »).
+    /// ⚠️ Remplace ce placeholder par ta vraie adresse.
+    static let feedbackEmail = "ton.email@exemple.com"
+
     /// L'identifiant numérique de l'app sur l'App Store (visible dans App Store Connect,
     /// « Identifiant Apple », ex : "6740000000"). Sert au bouton « Noter l'app ».
     static let appStoreID = ""
 
     // MARK: Achat intégré (version Pro)
 
-    /// Identifiant de l'achat intégré à créer dans App Store Connect (non consommable, 2,99 €).
-    static let proProductID = "com.enzobataille.swipephotos.pro"
+    /// Identifiant de l'achat intégré (non consommable, à vie) à créer dans App Store Connect.
+    /// ⚠️ Placeholder : remplace-le par ton identifiant définitif (ex : "com.enzobataille.swipephotos.unlimited").
+    /// Le prix (4,99 €) se règle uniquement dans App Store Connect, jamais dans le code.
+    static let proProductID = "com.monapp.unlimited"
 
-    /// Nombre de suppressions gratuites avant de devoir passer à la version Pro.
-    static let freeDeletionLimit = 100
+    /// Nombre de swipes gratuits (garder, supprimer ou favori) avant de devoir passer à la version illimitée.
+    static let freeSwipeLimit = 100
 
     // MARK: Détection des photos similaires
 

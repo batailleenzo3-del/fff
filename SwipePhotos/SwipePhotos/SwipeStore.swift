@@ -54,6 +54,14 @@ final class SwipeStore: ObservableObject {
     @Published private(set) var totalKept = 0
     @Published private(set) var totalFavorited = 0
 
+    // MARK: Freemium (swipes gratuits)
+
+    /// Nombre de swipes gratuits déjà utilisés (sauvegardé, ne diminue jamais).
+    @Published private(set) var freeSwipesUsed = 0
+    /// Médias déjà comptés : re-swiper une photo après « Annuler » ne coûte rien de plus,
+    /// et « Annuler » ne rend pas de swipe → impossible de contourner la limite.
+    private var countedSwipeIDs: Set<String> = []
+
     // MARK: Interne
 
     /// Médias déjà swipés pendant le cycle en cours : ils ne sont pas reproposés.
@@ -77,6 +85,8 @@ final class SwipeStore: ObservableObject {
         static let swiped = "stats.totalSwiped"
         static let kept = "stats.totalKept"
         static let favorited = "stats.totalFavorited"
+        static let freeSwipesUsed = "freemium.swipesUsed"
+        static let countedSwipeIDs = "freemium.countedIDs"
     }
 
     init() {
@@ -86,6 +96,8 @@ final class SwipeStore: ObservableObject {
         totalSwiped = defaults.integer(forKey: Key.swiped)
         totalKept = defaults.integer(forKey: Key.kept)
         totalFavorited = defaults.integer(forKey: Key.favorited)
+        freeSwipesUsed = defaults.integer(forKey: Key.freeSwipesUsed)
+        countedSwipeIDs = Set(defaults.stringArray(forKey: Key.countedSwipeIDs) ?? [])
         filter = MediaFilter(rawValue: defaults.string(forKey: Key.filter) ?? "") ?? .all
         reviewed = Set(defaults.stringArray(forKey: Key.reviewed) ?? [])
         if let data = defaults.data(forKey: Key.source),
@@ -103,7 +115,14 @@ final class SwipeStore: ObservableObject {
     var canUndo: Bool { !history.isEmpty }
     var trashBytes: Int64 { trash.reduce(0) { $0 + (trashSizes[$1.localIdentifier] ?? 0) } }
     var reviewedCount: Int { reviewed.count }
-    var freeDeletionsLeft: Int { max(AppConfig.freeDeletionLimit - totalDeletedCount, 0) }
+    var freeSwipesLeft: Int { max(AppConfig.freeSwipeLimit - freeSwipesUsed, 0) }
+
+    /// Vrai si la limite gratuite est atteinte pour la carte affichée.
+    func isSwipeLocked(isPro: Bool) -> Bool {
+        guard !isPro, let asset = current else { return false }
+        if countedSwipeIDs.contains(asset.localIdentifier) { return false } // déjà payée avant un « Annuler »
+        return freeSwipesUsed >= AppConfig.freeSwipeLimit
+    }
 
     var sourceTitle: String {
         switch source {
@@ -244,6 +263,7 @@ final class SwipeStore: ObservableObject {
         reviewed.insert(asset.localIdentifier)
         scheduleSave()
         totalSwiped += 1
+        countFreeSwipe(asset.localIdentifier)
 
         switch decision {
         case .trash:
@@ -326,9 +346,12 @@ final class SwipeStore: ObservableObject {
         saveTrash()
     }
 
-    /// Faut-il la version Pro pour vider la corbeille actuelle ?
-    func needsPro(isPro: Bool) -> Bool {
-        !isPro && trash.count > freeDeletionsLeft
+    /// Compte un swipe gratuit (une seule fois par média, et jamais rendu par « Annuler »).
+    private func countFreeSwipe(_ id: String) {
+        guard freeSwipesUsed < AppConfig.freeSwipeLimit, countedSwipeIDs.insert(id).inserted else { return }
+        freeSwipesUsed += 1
+        UserDefaults.standard.set(freeSwipesUsed, forKey: Key.freeSwipesUsed)
+        UserDefaults.standard.set(Array(countedSwipeIDs), forKey: Key.countedSwipeIDs)
     }
 
     /// Supprime toute la corbeille d'un coup (une seule confirmation iOS).

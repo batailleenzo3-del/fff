@@ -5,7 +5,7 @@
   ],
   "products" : [
     {
-      "displayPrice" : "2.99",
+      "displayPrice" : "4.99",
       "familyShareable" : true,
       "internalID" : "5A1B0C02",
       "localizations" : [
@@ -20,8 +20,8 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.enzobataille.swipephotos.pro",
-      "referenceName" : "Swipe Photos Pro",
+      "productID" : "com.monapp.unlimited",
+      "referenceName" : "Swipe Photos Illimité",
       "type" : "NonConsumable"
     }
   ],

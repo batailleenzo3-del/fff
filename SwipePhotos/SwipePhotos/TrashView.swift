@@ -36,11 +36,6 @@ struct TrashView: View {
                             Text(loc("trash_tap_to_restore"))
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
-                            if !purchases.isPro {
-                                Text(loc("free_deletions_left", store.freeDeletionsLeft))
-                                    .font(.footnote.weight(.semibold))
-                                    .foregroundStyle(.pink)
-                            }
                         }
                         .padding(.top, 8)
 
@@ -88,10 +83,6 @@ struct TrashView: View {
 
     private var deleteButton: some View {
         Button {
-            if store.needsPro(isPro: purchases.isPro) {
-                showPaywall = true
-                return
-            }
             isDeleting = true
             Task {
                 if let result = await store.emptyTrash() {

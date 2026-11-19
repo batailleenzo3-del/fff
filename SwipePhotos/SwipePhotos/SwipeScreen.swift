@@ -27,6 +27,8 @@ struct SwipeScreen: View {
     @State private var showTrash = false
     @State private var showSourcePicker = false
     @State private var showSettings = false
+    @State private var showPaywall = false
+    @State private var showFeedback = false
     @State private var showingDuplicates = false
     @State private var zone = 0 // -1 corbeille, 0 neutre, 1 garder, 2 favori
     @State private var refreshSpins = 0
@@ -39,6 +41,9 @@ struct SwipeScreen: View {
             tabs
             if store.authorization == .limited {
                 limitedBanner
+            }
+            if !purchases.isPro && !showingDuplicates && store.freeSwipesLeft <= 20 {
+                freeSwipesBanner
             }
 
             if showingDuplicates {
@@ -76,12 +81,20 @@ struct SwipeScreen: View {
             SettingsView(store: store, purchases: purchases)
                 .appAppearance()
         }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(purchases: purchases)
+                .appAppearance()
+        }
+        .sheet(isPresented: $showFeedback) {
+            FeedbackView()
+                .appAppearance()
+        }
     }
 
     // MARK: En-tête
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: 8) {
             Button {
                 showSourcePicker = true
             } label: {
@@ -108,7 +121,11 @@ struct SwipeScreen: View {
 
             Spacer(minLength: 6)
 
-            GlassIconButton(icon: "gearshape.fill", accessibility: loc("settings_title")) {
+            GlassIconButton(icon: "lightbulb.fill", tint: .yellow, size: 40, accessibility: loc("feedback_title")) {
+                showFeedback = true
+            }
+
+            GlassIconButton(icon: "gearshape.fill", size: 40, accessibility: loc("settings_title")) {
                 showSettings = true
             }
 
@@ -125,8 +142,8 @@ struct SwipeScreen: View {
                 }
                 .font(.headline)
                 .foregroundStyle(store.trash.isEmpty ? Color.primary : Color.white)
-                .padding(.horizontal, 14)
-                .frame(height: 44)
+                .padding(.horizontal, 12)
+                .frame(height: 40)
                 .glassBackground(in: Capsule(), tint: store.trash.isEmpty ? nil : .red, interactive: true)
                 .animation(.snappy, value: store.trash.count)
             }
@@ -157,7 +174,7 @@ struct SwipeScreen: View {
                 .foregroundStyle(.primary)
                 .rotationEffect(.degrees(Double(refreshSpins) * 360))
                 .animation(.easeInOut(duration: 0.5), value: refreshSpins)
-                .frame(width: 44, height: 44)
+                .frame(width: 40, height: 40)
                 .glassBackground(in: Circle(), interactive: true)
                 .overlay(alignment: .topTrailing) {
                     // Point rose = de nouvelles photos sont arrivées
@@ -248,6 +265,68 @@ struct SwipeScreen: View {
         .padding(.horizontal, 16)
         .contentShape(Rectangle())
         .gesture(dragGesture)
+        .overlay {
+            if store.isSwipeLocked(isPro: purchases.isPro) && !store.isLoading {
+                lockedView
+            }
+        }
+    }
+
+    // MARK: Limite gratuite
+
+    private var isLocked: Bool { store.isSwipeLocked(isPro: purchases.isPro) }
+
+    private var lockedView: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 34, weight: .semibold))
+                .foregroundStyle(.yellow)
+                .frame(width: 76, height: 76)
+                .glassBackground(in: Circle())
+            Text(loc("limit_reached_title"))
+                .font(.system(.title2, design: .rounded, weight: .bold))
+            Text(loc("limit_reached_text", AppConfig.freeSwipeLimit))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Button {
+                showPaywall = true
+            } label: {
+                Text(loc("unlock_button"))
+                    .font(.headline)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 14)
+                    .background(LinearGradient.brand, in: Capsule())
+                    .foregroundStyle(.white)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(26)
+        .glassBackground(in: RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .padding(.horizontal, 32)
+    }
+
+    private var freeSwipesBanner: some View {
+        Button {
+            showPaywall = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "crown.fill").foregroundStyle(.yellow)
+                Text(loc("free_swipes_left", store.freeSwipesLeft))
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 4)
+                Text(loc("go_pro"))
+                    .font(.footnote.weight(.bold))
+                    .foregroundStyle(.pink)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 9)
+            .glassBackground(in: Capsule(), interactive: true)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 20)
+        .frame(maxWidth: 700)
     }
 
     private var controls: some View {
@@ -322,7 +401,7 @@ struct SwipeScreen: View {
     private var dragGesture: some Gesture {
         DragGesture()
             .onChanged { value in
-                guard !isAnimatingOut, store.current != nil else { return }
+                guard !isAnimatingOut, store.current != nil, !isLocked else { return }
                 offset = value.translation
                 let x = value.translation.width
                 let y = value.translation.height
@@ -336,6 +415,11 @@ struct SwipeScreen: View {
             }
             .onEnded { value in
                 guard !isAnimatingOut, store.current != nil else { return }
+                if isLocked {
+                    resetCard()
+                    showPaywall = true
+                    return
+                }
                 let x = value.translation.width
                 let y = value.translation.height
                 let projectedX = value.predictedEndTranslation.width
@@ -363,6 +447,10 @@ struct SwipeScreen: View {
 
     private func swipe(_ decision: SwipeDecision) {
         guard store.current != nil, !isAnimatingOut else { return }
+        if isLocked {
+            showPaywall = true
+            return
+        }
         isAnimatingOut = true
         let target: CGSize
         switch decision {
@@ -376,6 +464,8 @@ struct SwipeScreen: View {
             store.decide(decision)
             offset = .zero
             isAnimatingOut = false
+            // 100e swipe atteint : on propose la version illimitée
+            if isLocked { showPaywall = true }
         }
     }
 

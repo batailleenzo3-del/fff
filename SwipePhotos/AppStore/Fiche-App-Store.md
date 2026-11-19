@@ -3,8 +3,8 @@
 Dans App Store Connect : ton app → version 1.0 → remplis la langue **Français**, puis ajoute
 **Anglais (US)**, **Espagnol (Espagne)**, **Allemand** et **Italien** (menu des langues en haut à droite).
 
-> Modèle économique : **app gratuite** + **achat intégré « Swipe Photos Pro » à 2,99 €** (achat unique).
-> Les 100 premières suppressions sont gratuites.
+> Modèle économique : **app gratuite** avec **100 swipes offerts** + **achat intégré non consommable à 4,99 €** (version illimitée à vie).
+> Le prix se règle uniquement dans App Store Connect : l'app l'affiche automatiquement.
 
 ---
 
@@ -42,7 +42,7 @@ Ta galerie déborde ? Swipe Photos la remet en ordre en quelques minutes, d'un s
 Tout se passe sur ton appareil, y compris la détection des doublons. Pas de compte, pas de pub, aucune photo envoyée.
 
 GRATUIT POUR COMMENCER
-Les 100 premières suppressions sont offertes. Passe ensuite à Swipe Photos Pro (achat unique, sans abonnement) pour des suppressions illimitées.
+Les 100 premiers swipes sont offerts. Débloque ensuite la version illimitée (achat unique à vie, sans abonnement).
 
 Les éléments supprimés restent 30 jours dans « Supprimés récemment » de l'app Photos.
 ```
@@ -87,7 +87,7 @@ Is your camera roll overflowing? Swipe Photos cleans it up in minutes, with a si
 Everything happens on your device, including duplicate detection. No account, no ads, no photo uploaded.
 
 FREE TO START
-Your first 100 deletions are free. Then upgrade to Swipe Photos Pro (one-time purchase, no subscription) for unlimited deletions.
+Your first 100 swipes are free. Then unlock the unlimited version (one-time lifetime purchase, no subscription).
 
 Deleted items stay 30 days in “Recently Deleted” in the Photos app.
 ```
@@ -119,7 +119,7 @@ Libera gigas en minutos: desliza a la derecha para conservar y a la izquierda pa
 • UNA SOLA CONFIRMACIÓN para eliminarlo todo
 • 100 % PRIVADO: todo ocurre en tu iPhone
 
-Las 100 primeras eliminaciones son gratis. Después, Swipe Photos Pro (pago único, sin suscripción) desbloquea eliminaciones ilimitadas.
+Los 100 primeros swipes son gratis. Después, desbloquea la versión ilimitada (pago único de por vida, sin suscripción).
 ```
 **Palabras clave**
 ```
@@ -149,7 +149,7 @@ Deine Mediathek platzt aus allen Nähten? Swipe Photos räumt sie in Minuten auf
 • EINE BESTÄTIGUNG, um alles auf einmal zu löschen
 • 100 % PRIVAT: alles passiert auf deinem iPhone
 
-Die ersten 100 Löschungen sind kostenlos. Danach schaltet Swipe Photos Pro (Einmalkauf, kein Abo) unbegrenzte Löschungen frei.
+Die ersten 100 Swipes sind kostenlos. Danach schaltest du die unbegrenzte Version frei (Einmalkauf, kein Abo).
 ```
 **Schlüsselwörter**
 ```
@@ -179,7 +179,7 @@ La tua galleria è piena? Swipe Photos la mette in ordine in pochi minuti con un
 • UNA SOLA CONFERMA per eliminare tutto
 • 100% PRIVATO: tutto avviene sul tuo iPhone
 
-Le prime 100 eliminazioni sono gratuite. Poi Swipe Photos Pro (acquisto unico, nessun abbonamento) sblocca eliminazioni illimitate.
+I primi 100 swipe sono gratuiti. Poi sblocca la versione illimitata (acquisto unico a vita, nessun abbonamento).
 ```
 **Parole chiave**
 ```
@@ -193,12 +193,12 @@ ordinare,foto,galleria,pulire,duplicati,spazio,archiviazione,eliminare,video,alb
 | Champ | Valeur |
 |---|---|
 | Type | **Non consommable** |
-| Nom de référence | `Swipe Photos Pro` |
-| Identifiant du produit | `com.enzobataille.swipephotos.pro` ⚠️ exactement celui-ci (sinon change-le aussi dans `AppConfig.swift`) |
-| Prix | **2,99 €** (France comme pays de base) |
-| Nom affiché (FR) | `Swipe Photos Pro` |
-| Description (FR) | `Suppressions illimitées et toutes les fonctions` |
-| Capture pour la vérification | une capture de l'écran Pro de l'app |
+| Nom de référence | `Swipe Photos Illimité` |
+| Identifiant du produit | le même que `proProductID` dans `AppConfig.swift` (placeholder actuel : `com.monapp.unlimited`, à remplacer par ex. `com.enzobataille.swipephotos.unlimited`) |
+| Prix | **4,99 €** (France comme pays de base) |
+| Nom affiché (FR) | `Version illimitée` |
+| Description (FR) | `Swipes illimités, à vie` |
+| Capture pour la vérification | une capture de l'écran de paiement de l'app |
 
 Ajoute ensuite l'achat intégré à ta version 1.0 (section **Achats intégrés et abonnements**) avant de soumettre.
 
@@ -212,7 +212,8 @@ Swipe Photos lets users sort their photo library with swipe gestures.
 - The trash button (top right) deletes all selected items at once using PHAssetChangeRequest.deleteAssets, which shows the standard iOS confirmation.
 - "Duplicates" tab: similar photos are detected on device with the Vision framework.
 - Tap the title (top left) to choose albums or a month. Gear icon = settings and stats.
-- In-app purchase "Swipe Photos Pro" (non-consumable) unlocks unlimited deletions after 100 free deletions.
+- The first 100 swipes are free. A non-consumable in-app purchase unlocks unlimited swipes forever. "Restore purchases" is available on the paywall and in Settings.
+- Lightbulb icon (top bar) = feedback form that opens a pre-filled email.
 - No account, no network calls, no data collection.
 ```
 

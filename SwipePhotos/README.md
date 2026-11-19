@@ -1,4 +1,4 @@
-# 📸 Swipe Photos — le guide complet (version 2.0 « grand public »)
+# 📸 Swipe Photos — le guide complet (version 2.1)
 
 Ce dossier contient **tout** : le projet Xcode prêt à ouvrir, l'icône, l'achat intégré, les textes App Store en 5 langues, un studio de captures d'écran et la politique de confidentialité.
 Lis ce guide dans l'ordre. Chaque étape est expliquée clic par clic.
@@ -29,8 +29,17 @@ Lis ce guide dans l'ordre. Chaque étape est expliquée clic par clic.
 | **Titre en haut à gauche** | Choisir : toute la galerie, un ou plusieurs albums, ou un mois |
 | Onglets **Tout · Photos · Vidéos · Doublons** | Filtrer, ou trouver les photos similaires |
 | **↻** | Revenir immédiatement aux photos les plus récentes (point rose = nouvelles photos) |
+| **💡** | Idées & bugs : les utilisateurs t'envoient leurs suggestions par e-mail |
 | **⚙︎** | Réglages + statistiques |
 | **🗑 N** | Corbeille : récupérer des photos ou tout supprimer en **une seule** confirmation |
+
+### Nouveautés de la version 2.1
+- **100 swipes gratuits** (garder, supprimer ou favori), puis achat unique **à vie** de la version illimitée (**4,99 €**, prix réglé dans App Store Connect et affiché automatiquement par l'App Store dans la devise de l'utilisateur).
+- Le bouton **Annuler** ne rend pas de swipe gratuit, mais re-swiper la même photo ne coûte rien : impossible de contourner la limite, sans pénaliser l'utilisateur.
+- Au 100e swipe, l'écran de paiement s'ouvre et les cartes sont **bloquées** (panneau « Limite gratuite atteinte »). Un bandeau prévient quand il reste 20 swipes ou moins.
+- Écran de paiement : prix dynamique, **Restaurer mes achats**, chargement pendant la transaction, gestion des annulations et des erreurs.
+- Onglet **💡 Idées & bugs** : catégories (Nouvelle fonction, Bug, Design, Autre), champ de texte, infos techniques optionnelles, envoi via l'app Mail pré-remplie (ou Messages, WhatsApp…). Le brouillon est conservé.
+- La corbeille, les doublons et les suppressions restent illimités : seul le swipe est compté.
 
 ### Nouveautés de la version 2.0
 - **Doublons** : l'onglet « Doublons » regroupe les rafales et photos quasi identiques (intelligence artificielle d'Apple, sur l'iPhone). La meilleure est gardée automatiquement, les autres sont cochées pour la corbeille.
@@ -44,7 +53,6 @@ Lis ce guide dans l'ordre. Chaque étape est expliquée clic par clic.
 - **Liquid Glass** (iOS 26) sur les boutons et panneaux, **confettis** quand tout est trié ou après une suppression, vibrations plus riches.
 - **5 langues** : français, anglais, espagnol, allemand, italien (selon la langue de l'iPhone).
 - **iPad** : l'app fonctionne aussi sur iPad, en portrait et paysage.
-- **Freemium** : gratuite jusqu'à 100 suppressions, puis achat unique **Swipe Photos Pro à 2,99 €** (suppressions illimitées).
 - **Demande de note** App Store, une seule fois, après une belle suppression.
 
 > 💡 Tu reprends toujours là où tu t'étais arrêté. L'app revient aux photos les plus récentes selon la fréquence choisie dans les Réglages (24 h par défaut) ou quand tu touches ↻.
@@ -71,7 +79,8 @@ SwipePhotos/
 │   ├── TrashView.swift             ← corbeille
 │   ├── SourcePickerView.swift      ← choix albums / mois
 │   ├── SettingsView.swift          ← réglages + statistiques
-│   ├── PaywallView.swift           ← écran Swipe Photos Pro
+│   ├── PaywallView.swift           ← écran de paiement (version illimitée)
+│   ├── FeedbackView.swift          ← onglet Idées & bugs
 │   ├── OnboardingView.swift        ← tutoriel
 │   ├── MediaViews.swift            ← cartes photo/vidéo, miniatures
 │   ├── Effects.swift               ← Liquid Glass, fond, confettis
@@ -108,13 +117,15 @@ SwipePhotos/
 ## 4. Tester l'achat Pro sans payer
 
 **A. Le bouton de test (le plus simple)**
-Dans l'écran Pro (⚙︎ → « Passer à Swipe Photos Pro »), un bouton **🧪 Débloquer Pro (test uniquement)** apparaît. Il n'existe **que** quand l'app est lancée depuis Xcode : il disparaît automatiquement dans la version App Store.
+Dans l'écran de paiement (⚙︎ → « Passer à la version illimitée »), un bouton **🧪 Débloquer Pro (test uniquement)** apparaît. Il n'existe **que** quand l'app est lancée depuis Xcode : il disparaît automatiquement dans la version App Store.
 
 **B. Simuler un vrai achat avec le fichier StoreKit**
 1. Dans Xcode : menu **Product → Scheme → Edit Scheme…**
 2. À gauche **Run**, onglet **Options**.
 3. **StoreKit Configuration** : choisis **SwipePhotos.storekit** → **Close**.
-4. Relance avec ▶︎ : « Débloquer pour 2,99 € » ouvre une fausse fenêtre d'achat Apple (aucun paiement réel).
+4. Relance avec ▶︎ : « Débloquer pour 4,99 € » ouvre une fausse fenêtre d'achat Apple (aucun paiement réel).
+
+**Remettre le compteur de swipes à zéro pour tester** : supprime l'app de l'iPhone puis relance-la avec ▶︎.
 
 ---
 
@@ -137,6 +148,8 @@ Dans l'écran Pro (⚙︎ → « Passer à Swipe Photos Pro »), un bouton **�
 Ouvre `SwipePhotos/AppConfig.swift` et remplis :
 - `privacyPolicyURL` : l'adresse de ta politique de confidentialité en ligne (voir 6.3).
 - `supportEmail` : une adresse e-mail de contact dédiée (ex : swipephotos.app@gmail.com).
+- `feedbackEmail` : ⚠️ **ton adresse e-mail** qui recevra les idées et bugs (remplace `ton.email@exemple.com`).
+- `proProductID` : ⚠️ remplace le placeholder `com.monapp.unlimited` par ton identifiant définitif (ex : `com.enzobataille.swipephotos.unlimited`) — **le même** que dans App Store Connect. Pense aussi à le changer dans `SwipePhotos.storekit` (ouvre-le dans Xcode).
 - `appStoreID` : à remplir **après** la création de l'app dans App Store Connect (« Identifiant Apple », 10 chiffres). Pas obligatoire pour la 1ʳᵉ version.
 
 ### 6.3 Politique de confidentialité (obligatoire)
@@ -147,8 +160,8 @@ Ouvre `SwipePhotos/AppConfig.swift` et remplis :
 1. <https://appstoreconnect.apple.com> → **Apps** → **+** → **Nouvelle app** : iOS, nom (voir la fiche), langue Français, Bundle ID `com.enzobataille.swipephotos`, SKU `swipephotos001`.
 2. **Business** (« Accords, taxes et banques ») → signe le **Paid Apps Agreement**, remplis **RIB** et **infos fiscales** (obligatoire même pour une app gratuite avec achat intégré).
 3. **Prix et disponibilité** → **Gratuit**.
-4. **Achats intégrés** → **+** → **Non consommable** → identifiant `com.enzobataille.swipephotos.pro` → prix **2,99 €** (détails dans `AppStore/Fiche-App-Store.md`).
-5. Inscris-toi au **Small Business Program** (<https://developer.apple.com/app-store/small-business-program/>) : Apple ne prend que **15 %** → tu touches ≈ **2,10 €** par achat en France.
+4. **Achats intégrés** → **+** → **Non consommable** → identifiant = celui de `proProductID` → prix **4,99 €** (détails dans `AppStore/Fiche-App-Store.md`).
+5. Inscris-toi au **Small Business Program** (<https://developer.apple.com/app-store/small-business-program/>) : Apple ne prend que **15 %** → tu touches ≈ **3,50 €** par achat à 4,99 € en France.
 
 ### 6.5 Remplir la fiche
 - Textes en **5 langues** : copie-colle depuis `AppStore/Fiche-App-Store.md`.
@@ -179,7 +192,8 @@ Lis le message dans le **Centre de résolution**, corrige, augmente le **Build**
 | `Signing … requires a development team` | Partie 3, étape 3 |
 | `Failed Registering Bundle Identifier` | Change le Bundle Identifier (ajoute des chiffres) |
 | L'app se met en pause avec une ligne verte/rouge dans Xcode | Clique sur **▶︎ Continue** (barre du bas) ou lance l'app depuis l'écran d'accueil |
-| « Débloquer pour 2,99 € » affiche une erreur | Normal en test sans fichier StoreKit : utilise le bouton 🧪 ou la partie 4.B |
+| « Prix indisponible · Réessayer » sur l'écran de paiement | Normal en test sans fichier StoreKit (ou tant que l'achat intégré n'existe pas dans App Store Connect) : utilise le bouton 🧪 ou la partie 4.B |
+| « Envoyer par e-mail » ne fait rien | Aucune app Mail configurée : l'app propose de copier le message ; ou utilise « Envoyer autrement » |
 | Doublons : l'analyse est longue | Normal la 1ʳᵉ fois sur une grosse galerie (elle tourne sur l'iPhone). Les photos uniquement sur iCloud sont ignorées |
 | Trop / pas assez de doublons détectés | Change `similarityThreshold` dans `AppConfig.swift` (plus petit = plus strict) |
 | Seulement quelques photos visibles | Accès limité : touche **Gérer** dans le bandeau, ou Réglages iPhone → Swipe Photos → Photos → Accès complet |

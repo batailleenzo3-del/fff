@@ -2,8 +2,8 @@
 //  PurchaseManager.swift
 //  Achat intégré « Swipe Photos Pro » (StoreKit 2) : achat unique, pas d'abonnement.
 //
-//  Version gratuite : jusqu'à AppConfig.freeDeletionLimit suppressions.
-//  Version Pro : suppressions illimitées.
+//  Version gratuite : AppConfig.freeSwipeLimit swipes.
+//  Version illimitée : achat unique à vie (prix réglé dans App Store Connect).
 //
 
 import Foundation
@@ -35,8 +35,9 @@ final class PurchaseManager: ObservableObject {
         Task { await load() }
     }
 
-    /// Prix affiché, ex : "2,99 €".
-    var priceText: String { product?.displayPrice ?? "2,99 €" }
+    /// Prix affiché, fourni par l'App Store dans la devise de l'utilisateur (ex : "4,99 €").
+    /// nil tant que le produit n'est pas chargé : le prix n'est jamais écrit en dur.
+    var priceText: String? { product?.displayPrice }
 
     func load() async {
         do {

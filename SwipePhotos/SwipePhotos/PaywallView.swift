@@ -28,7 +28,7 @@ struct PaywallView: View {
                             Text(loc("paywall_title"))
                                 .font(.system(.largeTitle, design: .rounded, weight: .heavy))
                                 .multilineTextAlignment(.center)
-                            Text(loc("paywall_subtitle", AppConfig.freeDeletionLimit))
+                            Text(loc("paywall_subtitle", AppConfig.freeSwipeLimit))
                                 .font(.body)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
@@ -51,13 +51,24 @@ struct PaywallView: View {
                         } else {
                             Button {
                                 Task {
-                                    await purchases.purchase()
-                                    if purchases.isPro { dismiss() }
+                                    if purchases.product == nil {
+                                        await purchases.load()
+                                    } else {
+                                        await purchases.purchase()
+                                        if purchases.isPro { dismiss() }
+                                    }
                                 }
                             } label: {
                                 HStack {
                                     if purchases.isPurchasing { ProgressView().tint(.white) }
-                                    Text(loc("paywall_buy", purchases.priceText))
+                                    if let price = purchases.priceText {
+                                        Text(loc("paywall_buy", price))
+                                    } else if purchases.hasLoadedProducts {
+                                        Text(loc("paywall_retry"))
+                                    } else {
+                                        ProgressView().tint(.white)
+                                        Text(loc("paywall_price_loading"))
+                                    }
                                 }
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)

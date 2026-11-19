@@ -23,6 +23,7 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.onboardingDone) private var onboardingDone = true
 
     @State private var showPaywall = false
+    @State private var showFeedback = false
 
     var body: some View {
         NavigationStack {
@@ -75,6 +76,11 @@ struct SettingsView: View {
                 }
 
                 Section(loc("settings_help")) {
+                    Button {
+                        showFeedback = true
+                    } label: {
+                        Label(loc("feedback_title"), systemImage: "lightbulb.fill")
+                    }
                     Button {
                         onboardingDone = false
                         dismiss()
@@ -132,6 +138,10 @@ struct SettingsView: View {
                 PaywallView(purchases: purchases)
                     .appAppearance()
             }
+            .sheet(isPresented: $showFeedback) {
+                FeedbackView()
+                    .appAppearance()
+            }
         }
     }
 
@@ -160,17 +170,19 @@ struct SettingsView: View {
                             .foregroundStyle(.yellow)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(loc("pro_upgrade_title")).font(.headline).foregroundStyle(.primary)
-                            Text(loc("free_deletions_left", store.freeDeletionsLeft))
+                            Text(loc("free_swipes_left", store.freeSwipesLeft))
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Text(purchases.priceText)
-                            .font(.subheadline.weight(.bold))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(LinearGradient.brand, in: Capsule())
-                            .foregroundStyle(.white)
+                        if let price = purchases.priceText {
+                            Text(price)
+                                .font(.subheadline.weight(.bold))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(LinearGradient.brand, in: Capsule())
+                                .foregroundStyle(.white)
+                        }
                     }
                     .padding(.vertical, 4)
                 }

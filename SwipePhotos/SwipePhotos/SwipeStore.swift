@@ -35,6 +35,20 @@ final class SwipeStore: ObservableObject {
     @Published private(set) var totalFreedBytes: Int64 = 0
     @Published private(set) var totalDeletedCount = 0
 
+    /// Nouvelles photos arrivées dans la galerie depuis le dernier chargement.
+    @Published private(set) var newItemsCount = 0
+
+    /// Médias déjà swipés pendant le cycle en cours (24 h) : ils ne sont pas reproposés.
+    private var reviewed: Set<String> = []
+    private var newestDate: Date?
+    private var saveTask: Task<Void, Never>?
+
+    /// Toutes les 24 h, l'app repart automatiquement des photos les plus récentes.
+    static let cycleDuration: TimeInterval = 24 * 60 * 60
+
+    private let reviewedKey = "swipe.reviewedIDs"
+    private let cycleStartKey = "swipe.cycleStart"
+    private let sourceKey = "swipe.source"
     private let trashKey = "swipe.trashIDs"
     private let filterKey = "swipe.mediaFilter"
     private let freedKey = "swipe.totalFreedBytes"
@@ -46,6 +60,11 @@ final class SwipeStore: ObservableObject {
         totalFreedBytes = Int64(defaults.integer(forKey: freedKey))
         totalDeletedCount = defaults.integer(forKey: deletedKey)
         filter = MediaFilter(rawValue: defaults.string(forKey: filterKey) ?? "") ?? .all
+        reviewed = Set(defaults.stringArray(forKey: reviewedKey) ?? [])
+        if let data = defaults.data(forKey: sourceKey),
+           let saved = try? JSONDecoder().decode(SortSource.self, from: data) {
+            source = saved
+        }
     }
 
     // MARK: Infos calculées
@@ -72,21 +91,63 @@ final class SwipeStore: ObservableObject {
         if isAuthorized { start() }
     }
 
-    /// Appelé à l'ouverture de l'app : on repart TOUJOURS des photos les plus récentes.
+    /// Vrai si le dernier "retour au début" date de plus de 24 h.
+    private var cycleExpired: Bool {
+        let start = UserDefaults.standard.double(forKey: cycleStartKey)
+        return start == 0 || Date().timeIntervalSince1970 - start > Self.cycleDuration
+    }
+
+    /// Appelé à l'ouverture de l'app.
+    /// - Moins de 24 h depuis le dernier cycle : on reprend là où on s'était arrêté
+    ///   (les nouvelles photos éventuelles passent en premier).
+    /// - Plus de 24 h : on repart des photos les plus récentes, y compris celles déjà gardées.
     func start() {
-        source = .recent
         loadTrash()
+        if cycleExpired {
+            beginNewCycle()
+            source = .recent
+            saveSource()
+        }
         reload()
     }
 
-    /// Recharge la pile depuis le début pour la source et le filtre actuels.
+    /// Quand l'app revient au premier plan : pas de rechargement, sauf si 24 h sont passées.
+    func becameActive() {
+        guard isAuthorized, hasLoaded else { return }
+        if cycleExpired {
+            start()
+        } else {
+            checkForNewItems()
+        }
+    }
+
+    /// Bouton "Repartir des plus récentes" : on revoit tout, même ce qui a déjà été gardé.
+    func restartFromNewest() {
+        beginNewCycle()
+        reload()
+    }
+
+    /// Bouton "Afficher les nouvelles photos" : les nouvelles en premier,
+    /// puis on reprend exactement là où on était.
+    func showNewItems() {
+        reload()
+    }
+
+    private func beginNewCycle() {
+        reviewed.removeAll()
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: cycleStartKey)
+        persistNow()
+    }
+
+    /// Recharge la pile : tout ce qui n'a pas encore été swipé pendant ce cycle,
+    /// du plus récent au plus ancien.
     func reload() {
         loadGeneration += 1
         let generation = loadGeneration
         isLoading = true
 
         let savedTrash = UserDefaults.standard.stringArray(forKey: trashKey) ?? []
-        let excluded = Set(savedTrash).union(trash.map(\.localIdentifier))
+        let excluded = Set(savedTrash).union(trash.map(\.localIdentifier)).union(reviewed)
         let currentSource = source
         let currentFilter = filter
 
@@ -96,16 +157,31 @@ final class SwipeStore: ObservableObject {
             }.value
             guard generation == loadGeneration else { return }
             deck = list.assets
+            newestDate = list.newestDate
             index = 0
             history = []
             keptCount = 0
+            newItemsCount = 0
             isLoading = false
             hasLoaded = true
         }
     }
 
+    /// Compte les photos prises depuis le dernier chargement (sans toucher à la pile).
+    func checkForNewItems() {
+        guard case .recent = source, let since = newestDate else { return }
+        let currentFilter = filter
+        Task {
+            let count = await Task.detached(priority: .utility) {
+                LibraryService.countNewer(than: since, filter: currentFilter)
+            }.value
+            newItemsCount = count
+        }
+    }
+
     func select(source newSource: SortSource) {
         source = newSource
+        saveSource()
         reload()
     }
 
@@ -121,6 +197,8 @@ final class SwipeStore: ObservableObject {
     func decide(_ decision: SwipeDecision) {
         guard let asset = current else { return }
         history.append(HistoryEntry(asset: asset, decision: decision))
+        reviewed.insert(asset.localIdentifier)
+        scheduleSave()
         switch decision {
         case .trash:
             trash.append(asset)
@@ -134,6 +212,8 @@ final class SwipeStore: ObservableObject {
 
     func undo() {
         guard let last = history.popLast() else { return }
+        reviewed.remove(last.asset.localIdentifier)
+        scheduleSave()
         switch last.decision {
         case .trash:
             let id = last.asset.localIdentifier
@@ -199,6 +279,28 @@ final class SwipeStore: ObservableObject {
             trash = snapshot.assets + addedMeanwhile
             trashSizes.merge(snapshot.sizes) { current, _ in current }
             saveTrash()
+        }
+    }
+
+    /// Enregistre la progression (appelé aussi quand l'app passe en arrière-plan).
+    func persistNow() {
+        saveTask?.cancel()
+        UserDefaults.standard.set(Array(reviewed), forKey: reviewedKey)
+    }
+
+    /// Enregistre la progression 1 s après le dernier swipe (évite d'écrire à chaque geste).
+    private func scheduleSave() {
+        saveTask?.cancel()
+        saveTask = Task {
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            UserDefaults.standard.set(Array(reviewed), forKey: reviewedKey)
+        }
+    }
+
+    private func saveSource() {
+        if let data = try? JSONEncoder().encode(source) {
+            UserDefaults.standard.set(data, forKey: sourceKey)
         }
     }
 

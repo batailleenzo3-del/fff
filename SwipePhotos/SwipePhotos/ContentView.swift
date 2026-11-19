@@ -20,7 +20,6 @@ struct ContentView: View {
     @State private var showTrash = false
     @State private var showSourcePicker = false
     @State private var zone = 0 // -1 corbeille, 0 neutre, 1 garder (vibration)
-    @State private var backgroundDate: Date?
 
     private let threshold: CGFloat = 110
 
@@ -48,15 +47,11 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .background:
-                backgroundDate = Date()
+                store.persistNow() // on garde la position exacte
             case .active:
-                // Si l'app revient après plus de 5 minutes, on repart des photos les plus récentes
-                if let date = backgroundDate, Date().timeIntervalSince(date) > 5 * 60, store.isAuthorized {
-                    showTrash = false
-                    showSourcePicker = false
-                    store.start()
-                }
-                backgroundDate = nil
+                // Pas de rechargement : on reste sur la même photo.
+                // Seule exception : plus de 24 h depuis le dernier retour au début.
+                store.becameActive()
             default:
                 break
             }
@@ -87,6 +82,25 @@ struct ContentView: View {
             .pickerStyle(.segmented)
             .padding(.horizontal, 20)
 
+            if store.newItemsCount > 0 && !store.isLoading {
+                Button {
+                    store.showNewItems()
+                } label: {
+                    Label(store.newItemsCount > 1
+                          ? tr("\(store.newItemsCount) nouvelles photos · Afficher", "\(store.newItemsCount) new photos · Show")
+                          : tr("1 nouvelle photo · Afficher", "1 new photo · Show"),
+                          systemImage: "sparkles")
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(.linearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing),
+                                    in: Capsule())
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
             ZStack {
                 if !store.hasLoaded || store.isLoading {
                     VStack(spacing: 14) {
@@ -116,6 +130,7 @@ struct ContentView: View {
             controls
         }
         .padding(.bottom, 12)
+        .animation(.snappy, value: store.newItemsCount)
     }
 
     private var header: some View {
@@ -144,6 +159,8 @@ struct ContentView: View {
 
             Spacer(minLength: 12)
 
+            refreshMenu
+
             Button {
                 showTrash = true
             } label: {
@@ -164,6 +181,42 @@ struct ContentView: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
+    }
+
+    /// Bouton ↻ : nouvelles photos ou retour au début.
+    private var refreshMenu: some View {
+        Menu {
+            Button {
+                store.showNewItems()
+            } label: {
+                Label(store.newItemsCount > 0
+                      ? tr("Afficher les nouvelles photos (\(store.newItemsCount))", "Show new photos (\(store.newItemsCount))")
+                      : tr("Chercher de nouvelles photos", "Check for new photos"),
+                      systemImage: "sparkles")
+            }
+            Button {
+                store.restartFromNewest()
+            } label: {
+                Label(tr("Repartir des plus récentes", "Start over from newest"), systemImage: "arrow.counterclockwise")
+            }
+            Text(tr("Tu reprends toujours là où tu t'es arrêté. Retour automatique aux plus récentes toutes les 24 h.",
+                    "You always resume where you left off. Automatic return to newest every 24 h."))
+        } label: {
+            Image(systemName: "arrow.clockwise")
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(width: 42, height: 42)
+                .background(Color.white.opacity(0.1), in: Circle())
+                .overlay(alignment: .topTrailing) {
+                    if store.newItemsCount > 0 {
+                        Circle()
+                            .fill(Color.pink)
+                            .frame(width: 11, height: 11)
+                            .offset(x: 1, y: -1)
+                    }
+                }
+        }
+        .accessibilityLabel(tr("Actualiser", "Refresh"))
     }
 
     private var subtitle: String {
@@ -230,7 +283,7 @@ struct ContentView: View {
                 showSourcePicker = true
             }
             .buttonStyle(.bordered)
-            Button(tr("Recommencer", "Start over")) { store.reload() }
+            Button(tr("Revoir depuis les plus récentes", "Review again from newest")) { store.restartFromNewest() }
                 .foregroundStyle(.secondary)
         }
         .multilineTextAlignment(.center)

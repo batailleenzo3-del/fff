@@ -24,7 +24,10 @@ Lis ce guide dans l'ordre. Chaque étape est expliquée clic par clic.
 | **Garder** | Swipe à droite (ou bouton ♥) |
 | **Jeter** | Swipe à gauche (ou bouton ✕). La photo va dans une corbeille : **rien n'est supprimé tout de suite** |
 | **Annuler** | Bouton jaune ↩︎ : la dernière carte revient |
-| **Mode normal** | À chaque ouverture, l'app montre **toujours les photos les plus récentes en premier**, même celles que tu avais déjà gardées |
+| **Reprise** | Quand tu fermes et rouvres l'app, tu **reprends exactement à la dernière photo swipée** (rien n'est rechargé pendant une session) |
+| **Nouvelles photos** | Si tu prends des photos entre-temps, un bouton **« 3 nouvelles photos · Afficher »** apparaît : elles passent en premier, puis tu reprends où tu étais |
+| **Bouton ↻** (en haut) | « Afficher les nouvelles photos » ou « Repartir des plus récentes » (revoir toute la galerie, même ce que tu as déjà gardé) |
+| **Toutes les 24 h** | L'app repart automatiquement des photos les plus récentes de toute la galerie |
 | **Choisir quoi trier** | Touche le **titre en haut à gauche** (« Récentes ⌄ ») : toute la galerie, **un ou plusieurs albums** (coche-les), ou **un mois précis** |
 | **Photos / Vidéos** | Le sélecteur « Tout · Photos · Vidéos » sous le titre |
 | **Vidéos** | Elles se lisent dans la carte, en boucle, sans le son. Bouton 🔈 pour activer le son |
@@ -36,7 +39,7 @@ Lis ce guide dans l'ordre. Chaque étape est expliquée clic par clic.
 
 > 💡 La corbeille de l'app est **conservée** même si tu fermes l'app : les photos mises de côté ne réapparaissent pas dans la pile tant que tu ne les as pas récupérées ou supprimées.
 >
-> Si tu quittes l'app plus de 5 minutes, elle repart automatiquement des photos les plus récentes.
+> 💡 Pour changer la durée du cycle (24 h), modifie `cycleDuration` dans `SwipeStore.swift` (ex : `48 * 60 * 60` pour 48 h).
 
 ---
 

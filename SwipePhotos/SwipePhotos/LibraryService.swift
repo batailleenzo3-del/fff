@@ -30,15 +30,20 @@ nonisolated enum LibraryService {
     // MARK: Médias à trier
 
     /// Renvoie les médias à trier, du plus récent au plus ancien.
-    /// `excluded` : identifiants à ne pas montrer (ceux déjà dans la corbeille).
+    /// `excluded` : identifiants à ne pas montrer (corbeille + déjà vus pendant le cycle en cours).
     static func fetchDeck(source: SortSource, filter: MediaFilter, excluded: Set<String>) -> AssetList {
         var result: [PHAsset] = []
+        var newest: Date?
+        func track(_ asset: PHAsset) {
+            if let date = asset.creationDate, date > (newest ?? .distantPast) { newest = date }
+        }
 
         switch source {
         case .recent:
             let fetch = PHAsset.fetchAssets(with: fetchOptions(filter: filter))
             result.reserveCapacity(fetch.count)
             fetch.enumerateObjects { asset, _, _ in
+                track(asset)
                 if !excluded.contains(asset.localIdentifier) { result.append(asset) }
             }
 
@@ -58,6 +63,7 @@ nonisolated enum LibraryService {
             }
             let fetch = PHAsset.fetchAssets(with: options)
             fetch.enumerateObjects { asset, _, _ in
+                track(asset)
                 if !excluded.contains(asset.localIdentifier) { result.append(asset) }
             }
 
@@ -68,6 +74,7 @@ nonisolated enum LibraryService {
             collections.enumerateObjects { collection, _, _ in
                 let fetch = PHAsset.fetchAssets(in: collection, options: options)
                 fetch.enumerateObjects { asset, _, _ in
+                    track(asset)
                     let id = asset.localIdentifier
                     if !excluded.contains(id) && seen.insert(id).inserted {
                         result.append(asset)
@@ -77,7 +84,16 @@ nonisolated enum LibraryService {
             result.sort { ($0.creationDate ?? .distantPast) > ($1.creationDate ?? .distantPast) }
         }
 
-        return AssetList(assets: result)
+        return AssetList(assets: result, newestDate: newest)
+    }
+
+    /// Nombre de médias ajoutés à la galerie après `date`.
+    static func countNewer(than date: Date, filter: MediaFilter) -> Int {
+        let options = fetchOptions(filter: filter)
+        let datePredicate = NSPredicate(format: "creationDate > %@", date as NSDate)
+        let predicates = [options.predicate, datePredicate].compactMap { $0 }
+        options.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        return PHAsset.fetchAssets(with: options).count
     }
 
     // MARK: Albums et mois

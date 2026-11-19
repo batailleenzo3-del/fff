@@ -22,7 +22,7 @@ nonisolated enum MediaFilter: String, CaseIterable, Identifiable, Sendable {
 }
 
 /// Un mois précis (ex : novembre 2026).
-nonisolated struct MonthKey: Hashable, Comparable, Identifiable, Sendable {
+nonisolated struct MonthKey: Hashable, Comparable, Identifiable, Codable, Sendable {
     let year: Int
     let month: Int
 
@@ -35,7 +35,7 @@ nonisolated struct MonthKey: Hashable, Comparable, Identifiable, Sendable {
 }
 
 /// Ce que l'utilisateur est en train de trier.
-nonisolated enum SortSource: Hashable, Sendable {
+nonisolated enum SortSource: Hashable, Codable, Sendable {
     /// Mode normal : toute la galerie, des plus récentes aux plus anciennes.
     case recent
     /// Un ou plusieurs albums choisis.
@@ -71,6 +71,8 @@ struct HistoryEntry {
 /// Résultats calculés en arrière-plan puis renvoyés à l'écran.
 nonisolated struct AssetList: @unchecked Sendable {
     let assets: [PHAsset]
+    /// Date du média le plus récent de la source (y compris ceux déjà vus).
+    let newestDate: Date?
 }
 
 nonisolated struct TrashSnapshot: @unchecked Sendable {

@@ -44,7 +44,7 @@ Lis ce guide dans l'ordre. Chaque étape est expliquée clic par clic.
 - Le bouton **Annuler** ne rend pas de swipe gratuit, mais re-swiper la même photo ne coûte rien : impossible de contourner la limite, sans pénaliser l'utilisateur.
 - Au 100e swipe, l'écran de paiement s'ouvre et les cartes sont **bloquées** (panneau « Limite gratuite atteinte »). Un bandeau prévient quand il reste 20 swipes ou moins.
 - Écran de paiement : prix dynamique, **Restaurer mes achats**, chargement pendant la transaction, gestion des annulations et des erreurs.
-- Onglet **💡 Idées & bugs** : catégories (Nouvelle fonction, Bug, Design, Autre), champ de texte, infos techniques optionnelles, envoi via l'app Mail pré-remplie (ou Messages, WhatsApp…). Le brouillon est conservé.
+- Onglet **💡 Idées & bugs** : catégories (Nouvelle fonction, Bug, Design, Autre), champ de texte, infos techniques optionnelles, envoi via l'app Mail pré-remplie. Le brouillon est conservé.
 - La corbeille, les doublons et les suppressions restent illimités : seul le swipe est compté.
 
 ### Nouveautés de la version 2.0
@@ -209,7 +209,7 @@ Lis le message dans le **Centre de résolution**, corrige, augmente le **Build**
 | `Failed Registering Bundle Identifier` | Change le Bundle Identifier (ajoute des chiffres) |
 | L'app se met en pause avec une ligne verte/rouge dans Xcode | Clique sur **▶︎ Continue** (barre du bas) ou lance l'app depuis l'écran d'accueil |
 | « Prix indisponible · Réessayer » sur l'écran de paiement | Normal en test sans fichier StoreKit (ou tant que l'achat intégré n'existe pas dans App Store Connect) : utilise le bouton 🧪 ou la partie 4.B |
-| « Envoyer par e-mail » ne fait rien | Aucune app Mail configurée : l'app propose de copier le message ; ou utilise « Envoyer autrement » |
+| « Envoyer par e-mail » ne fait rien | Aucune app Mail configurée : l'app propose de copier le message |
 | Doublons : l'analyse est longue | Normal la 1ʳᵉ fois sur une grosse galerie (elle tourne sur l'iPhone). Les photos uniquement sur iCloud sont ignorées |
 | Trop / pas assez de doublons détectés | Change `similarityThreshold` dans `AppConfig.swift` (plus petit = plus strict) |
 | Seulement quelques photos visibles | Accès limité : touche **Gérer** dans le bandeau, ou Réglages iPhone → Swipe Photos → Photos → Accès complet |

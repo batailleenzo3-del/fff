@@ -166,13 +166,6 @@ struct FeedbackView: View {
                 .buttonStyle(.plain)
                 .disabled(!canSend)
 
-                ShareLink(item: "\(subject)\n\n\(messageBody)") {
-                    Label(loc("feedback_share"), systemImage: "square.and.arrow.up")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                }
-                .tint(theme.primary)
-                .disabled(!canSend)
             }
             .padding(20)
             .frame(maxWidth: 620)
@@ -195,9 +188,6 @@ struct FeedbackView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Spacer(minLength: 0)
-                if selected {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(theme.primary)
-                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 12)

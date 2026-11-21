@@ -169,7 +169,7 @@ Ouvre `SwipePhotos/AppConfig.swift` et remplis :
 - `appStoreID` : à remplir **après** la création de l'app dans App Store Connect (« Identifiant Apple », 10 chiffres). Pas obligatoire pour la 1ʳᵉ version.
 
 ### 6.3 Politique de confidentialité (obligatoire)
-1. Ouvre `AppStore/politique-de-confidentialite.html` avec **TextEdit**, remplace `[TON E-MAIL DE CONTACT]` et `[DATE]`.
+1. Ouvre `AppStore/politique-de-confidentialite.html` avec **TextEdit**, remplace `[TON E-MAIL DE CONTACT]` (6 fois ; la date est déjà remplie).
 2. Mets le texte en ligne (page **Notion** publique ou **Google Doc** « Tous les utilisateurs disposant du lien ») et copie l'adresse dans `AppConfig.swift` et dans App Store Connect.
 
 ### 6.4 Créer l'app et l'achat intégré
